@@ -597,22 +597,22 @@
                             <div class="shop-item">
                                 <strong>Minor Potion</strong>
                                 <p>Heals 25% HP</p>
-                                <button id="buy-potion-25">Buy (15G)</button>
+                                <button id="buy-potion-25">Buy (20G)</button>
                             </div>
                             <div class="shop-item">
                                 <strong>Standard Potion</strong>
                                 <p>Heals 50% HP</p>
-                                <button id="buy-potion-50">Buy (28G)</button>
+                                <button id="buy-potion-50">Buy (35G)</button>
                             </div>
                             <div class="shop-item">
                                 <strong>Greater Potion</strong>
                                 <p>Heals 75% HP</p>
-                                <button id="buy-potion-75">Buy (40G)</button>
+                                <button id="buy-potion-75">Buy (50G)</button>
                             </div>
                             <div class="shop-item">
                                 <strong>Full Restore</strong>
                                 <p>Heals 100% HP</p>
-                                <button id="buy-potion-100">Buy (50G)</button>
+                                <button id="buy-potion-100">Buy (65G)</button>
                             </div>
                         </div>
                     </div>
@@ -678,7 +678,7 @@
                 let gameInterval;
                 let autoSaveInterval;
                 let tooltipHideTimer;
-                const SAVE_KEY = 'idleRpgSaveData_v4'; // Changed key for new structure
+                const SAVE_KEY = 'idleRpgSaveData_v7_monsterUpdate'; // Changed key for new structure
 
                 const STAT_NAMES = {
                     str: 'STR', con: 'CON', def: 'DEF', dex: 'DEX',
@@ -688,7 +688,7 @@
                 function getDefaultGameState() {
                     return {
                         player: null, currentMonster: null, wave: 1, kills: 0, gold: 0, isRunning: false,
-                        potionCosts: { p25: 15, p50: 28, p75: 40, p100: 50 },
+                        potionCosts: { p25: 20, p50: 35, p75: 50, p100: 65 },
                         inventory: [],
                         equipment: { weapon: null, body: null, legs: null },
                         maxInventorySize: 20,
@@ -735,34 +735,42 @@
 
                 const monsters = {
                     regular: [
-                        { name: 'Slime', baseHp: 30, baseAtk: 5, baseDef: 2, baseEvasion: 0.01, gold: 2, xp: 5, dropChance: 0.15 },
-                        { name: 'Giant Rat', baseHp: 25, baseAtk: 6, baseDef: 1, baseEvasion: 0.03, gold: 1, xp: 4, dropChance: 0.10 },
-                        { name: 'Goblin Scout', baseHp: 40, baseAtk: 7, baseDef: 3, baseEvasion: 0.05, gold: 3, xp: 6, dropChance: 0.20 },
-                        { name: 'Cave Bat', baseHp: 20, baseAtk: 8, baseDef: 0, baseEvasion: 0.08, gold: 1, xp: 3, dropChance: 0.08 }
+                        { name: 'Slime', baseHp: 30, baseAtk: 5, baseDef: 2, baseEvasion: 0.01, gold: 5, xp: 5, dropChance: 0.15, monsterType: 'regular' },
+                        { name: 'Giant Rat', baseHp: 25, baseAtk: 6, baseDef: 1, baseEvasion: 0.03, gold: 4, xp: 4, dropChance: 0.10, monsterType: 'regular' },
+                        { name: 'Goblin Scout', baseHp: 40, baseAtk: 7, baseDef: 3, baseEvasion: 0.05, gold: 7, xp: 6, dropChance: 0.20, monsterType: 'regular' },
+                        { name: 'Cave Bat', baseHp: 20, baseAtk: 8, baseDef: 0, baseEvasion: 0.08, gold: 3, xp: 3, dropChance: 0.08, monsterType: 'regular' },
+                        { name: 'Kobold Miner', baseHp: 35, baseAtk: 9, baseDef: 2, baseEvasion: 0.02, gold: 8, xp: 7, dropChance: 0.18, monsterType: 'regular' },
+                        { name: 'Forest Spider', baseHp: 30, baseAtk: 7, baseDef: 1, baseEvasion: 0.10, gold: 6, xp: 5, dropChance: 0.12, monsterType: 'regular' },
+                        { name: 'Undead Soldier', baseHp: 50, baseAtk: 6, baseDef: 5, baseEvasion: 0.01, gold: 9, xp: 8, dropChance: 0.22, monsterType: 'regular' },
+                    ],
+                    mutant: [
+                        { name: 'Mutated Slime', baseHp: 80, baseAtk: 10, baseDef: 1, baseEvasion: 0.01, gold: 20, xp: 15, dropChance: 0.50, monsterType: 'mutant' },
+                        { name: 'Rabid Wolf', baseHp: 50, baseAtk: 18, baseDef: 2, baseEvasion: 0.12, gold: 25, xp: 18, dropChance: 0.40, monsterType: 'mutant' },
+                        { name: 'Shrieking Fungus', baseHp: 100, baseAtk: 8, baseDef: 8, baseEvasion: 0.00, gold: 30, xp: 20, dropChance: 0.60, monsterType: 'mutant' },
                     ],
                     elite: [
-                        { name: 'Orc Grunt', baseHp: 120, baseAtk: 20, baseDef: 8, baseEvasion: 0.05, gold: 20, xp: 30, dropChance: 0.8, isElite: true },
-                        { name: 'Troll', baseHp: 150, baseAtk: 18, baseDef: 12, baseEvasion: 0.02, gold: 25, xp: 40, dropChance: 0.9, isElite: true },
-                        { name: 'Ogre Mage', baseHp: 100, baseAtk: 28, baseDef: 6, baseEvasion: 0.04, gold: 30, xp: 50, dropChance: 0.85, isElite: true }
+                        { name: 'Orc Grunt', baseHp: 120, baseAtk: 20, baseDef: 8, baseEvasion: 0.05, gold: 50, xp: 30, dropChance: 0.8, monsterType: 'elite' },
+                        { name: 'Troll', baseHp: 150, baseAtk: 18, baseDef: 12, baseEvasion: 0.02, gold: 65, xp: 40, dropChance: 0.9, monsterType: 'elite' },
+                        { name: 'Ogre Mage', baseHp: 100, baseAtk: 28, baseDef: 6, baseEvasion: 0.04, gold: 80, xp: 50, dropChance: 0.85, monsterType: 'elite' },
+                        { name: 'Goblin Shaman', baseHp: 90, baseAtk: 32, baseDef: 5, baseEvasion: 0.08, gold: 90, xp: 55, dropChance: 0.88, monsterType: 'elite' },
+                        { name: 'Stone Golem', baseHp: 200, baseAtk: 15, baseDef: 20, baseEvasion: 0.00, gold: 100, xp: 60, dropChance: 1.0, monsterType: 'elite' },
                     ],
                     bosses: [
-                        { name: 'Grimgnaw the Goblin King', baseHp: 400, baseAtk: 35, baseDef: 15, baseEvasion: 0.06, gold: 150, xp: 200, dropChance: 1.0 },
-                        { name: 'The Slime Mother', baseHp: 600, baseAtk: 30, baseDef: 25, baseEvasion: 0.03, gold: 250, xp: 350, dropChance: 1.0 }
+                        { name: 'Grimgnaw the Goblin King', baseHp: 400, baseAtk: 35, baseDef: 15, baseEvasion: 0.06, gold: 400, xp: 200, dropChance: 1.0, monsterType: 'boss' },
+                        { name: 'The Slime Mother', baseHp: 600, baseAtk: 30, baseDef: 25, baseEvasion: 0.03, gold: 600, xp: 350, dropChance: 1.0, monsterType: 'boss' },
+                        { name: 'Hydra', baseHp: 500, baseAtk: 45, baseDef: 12, baseEvasion: 0.10, gold: 800, xp: 500, dropChance: 1.0, monsterType: 'boss' },
+                        { name: 'Dragon Whelp', baseHp: 700, baseAtk: 40, baseDef: 20, baseEvasion: 0.08, gold: 1000, xp: 600, dropChance: 1.0, monsterType: 'boss' },
                     ]
                 };
                 const itemData = {
                     types: ['weapon', 'body', 'legs'],
                     rarities: {
-                        N: { color: '#DEDEDE', statMod: 1.0, value: 2, bonusStats: 0 },
-                        R: { color: '#63C270', statMod: 1.2, value: 8, bonusStats: 1 },
-                        SR: { color: '#6386C2', statMod: 1.5, value: 40, bonusStats: 2 },
-                        SSR: { color: '#9663C2', statMod: 2.0, value: 200, bonusStats: 3 },
-                        UR: { color: '#C29463', statMod: 2.8, value: 1000, bonusStats: 4 },
-                    },
-                    baseStats: {
-                        weapon: { str: 5, int: 5 },
-                        body: { def: 4, con: 10 },
-                        legs: { def: 2, agl: 3 }
+                        N:   { color: '#DEDEDE',  statMod: 1.0, value: 2,   baseStatCount: 1, bonusStats: 0 },
+                        R:   { color: '#63C270',  statMod: 1.2, value: 8,   baseStatCount: 1, bonusStats: 1 },
+                        SR:  { color: '#6386C2',  statMod: 1.5, value: 40,  baseStatCount: 2, bonusStats: 2 },
+                        SSR: { color: '#9663C2',  statMod: 2.0, value: 200, baseStatCount: 2, bonusStats: 3 },
+                        UR:  { color: '#C29463',  statMod: 2.8, value: 1000,baseStatCount: 3, bonusStats: 4 },
+                        LR:  { color: '#FFD700',  statMod: 3.5, value: 5000,baseStatCount: 5, bonusStats: 4 },
                     },
                     bonusStatPool: Object.keys(STAT_NAMES),
                     names: {
@@ -915,7 +923,7 @@
                     gameState.player = {
                         name: 'Player-' + Math.floor(1000 + Math.random() * 9000),
                         className: className, baseClassName: className,
-                        level: 1, xp: 0, xpToNextLevel: 50,
+                        level: 1, xp: 0, xpToNextLevel: 40,
                         statPoints: 5,
                         baseStats: { ...classInfo.base },
                         investedStats: { str: 0, con: 0, def: 0, dex: 0, agl: 0, int: 0, critChance: 0, critDmg: 0 },
@@ -946,8 +954,15 @@
                     for (const type in gameState.equipment) {
                         const item = gameState.inventory.find(i => i.id === gameState.equipment[type]);
                         if (item) {
-                            for (const stat in STAT_NAMES) {
-                                totals[stat] += (item[stat] || 0) + (item.bonusStats?.[stat] || 0);
+                            // Sum base stats from item
+                            for (const stat in item) {
+                                if (STAT_NAMES[stat] && typeof item[stat] === 'number') {
+                                    totals[stat] = (totals[stat] || 0) + item[stat];
+                                }
+                            }
+                            // Sum bonus stats from item
+                            for (const stat in item.bonusStats) {
+                                totals[stat] = (totals[stat] || 0) + item.bonusStats[stat];
                             }
                         }
                     }
@@ -1032,13 +1047,13 @@
                     }
 
                     gameState.kills++;
-                    if (gameState.currentMonster.isBoss) {
+                    if (gameState.currentMonster.monsterType === 'boss') {
                         gameState.wave++;
                         gameState.kills = 0;
                         UIElements.challengeBossBtn.disabled = true;
                     }
 
-                    if (gameState.kills >= 10 && !gameState.currentMonster.isBoss) UIElements.challengeBossBtn.disabled = false;
+                    if (gameState.kills >= 10 && gameState.currentMonster.monsterType !== 'boss') UIElements.challengeBossBtn.disabled = false;
                     if (gameState.player.xp >= gameState.player.xpToNextLevel) levelUp();
 
                     spawnMonster();
@@ -1052,66 +1067,98 @@
                     logAction(`You lose ${xpPenalty} XP.`, 'log-error');
                     gameState.player.currentHp = getPlayerTotalStats().hp * 0.5;
                     logAction(`You revive with 50% health.`, 'log-system');
-                    if (gameState.currentMonster.isBoss) {
+                    if (gameState.currentMonster.monsterType === 'boss') {
                         UIElements.challengeBossBtn.disabled = true;
                         spawnMonster();
                     }
                 }
 
+                function shuffleArray(array) {
+                    for (let i = array.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [array[i], array[j]] = [array[j], array[i]];
+                    }
+                    return array;
+                }
+
+                function getRarityProbabilities(monsterType) {
+                    switch (monsterType) {
+                        case 'regular':
+                            return { N: 0.80, R: 0.17, SR: 0.025, SSR: 0.005, UR: 0, LR: 0 };
+                        case 'mutant':
+                            return { N: 0.647, R: 0.30, SR: 0.04, SSR: 0.01, UR: 0.003, LR: 0 };
+                        case 'elite':
+                            return { N: 0.459, R: 0.40, SR: 0.10, SSR: 0.03, UR: 0.01, LR: 0.001 };
+                        case 'boss':
+                            return { N: 0.10, R: 0.60, SR: 0.20, SSR: 0.075, UR: 0.02, LR: 0.005 };
+                        default:
+                            return { N: 1.0, R: 0, SR: 0, SSR: 0, UR: 0, LR: 0 };
+                    }
+                }
+
+
                 function generateItemDrop(monster) {
                     if (gameState.inventory.length >= gameState.maxInventorySize) {
                         logAction('Inventory is full!', 'log-system'); return;
                     }
+
+                    const classChoices = ['Warrior', 'Rogue', 'Wizard'];
+                    const classForDrop = classChoices[Math.floor(Math.random() * classChoices.length)];
                     const itemType = itemData.types[Math.floor(Math.random() * itemData.types.length)];
-                    const playerBaseClass = gameState.player.baseClassName;
-                    const possibleNames = itemData.names[itemType][playerBaseClass];
+                    const possibleNames = itemData.names[itemType][classForDrop];
                     const baseName = possibleNames[Math.floor(Math.random() * possibleNames.length)];
                     const prefix = itemData.names.prefixes.Balanced[Math.floor(Math.random() * itemData.names.prefixes.Balanced.length)];
 
-                    let rarityKey;
+                    const probs = getRarityProbabilities(monster.monsterType);
                     const rand = Math.random();
-                    if (monster.isBoss) {
-                        if (rand < 0.4) rarityKey = 'R'; else if (rand < 0.8) rarityKey = 'SR'; else if (rand < 0.98) rarityKey = 'SSR'; else rarityKey = 'UR';
-                    } else if (monster.isElite) {
-                        if (rand < 0.5) rarityKey = 'R'; else if (rand < 0.85) rarityKey = 'SR'; else rarityKey = 'SSR';
-                    } else {
-                        if (rand < 0.8) rarityKey = 'N'; else rarityKey = 'R';
-                    }
-                    if (!rarityKey) rarityKey = 'N';
+                    let cumulativeProb = 0;
+                    let rarityKey = 'N'; // Default
+                    if (rand < (cumulativeProb += probs.N)) rarityKey = 'N';
+                    else if (rand < (cumulativeProb += probs.R)) rarityKey = 'R';
+                    else if (rand < (cumulativeProb += probs.SR)) rarityKey = 'SR';
+                    else if (rand < (cumulativeProb += probs.SSR)) rarityKey = 'SSR';
+                    else if (rand < (cumulativeProb += probs.UR)) rarityKey = 'UR';
+                    else if (rand < (cumulativeProb += probs.LR)) rarityKey = 'LR';
+
 
                     const rarityInfo = itemData.rarities[rarityKey];
+                    const waveScale = 1 + (gameState.wave / 50);
+
                     const newItem = {
                         id: Date.now() + Math.random(),
                         name: `${prefix} ${baseName}`,
                         type: itemType,
                         rarity: rarityKey,
-                        classReq: playerBaseClass,
+                        classReq: classForDrop,
                         bonusStats: {}
                     };
 
-                    // Add base stats
-                    for (const stat in itemData.baseStats[itemType]) {
-                        newItem[stat] = Math.round(itemData.baseStats[itemType][stat] * rarityInfo.statMod);
+                    const statPool = shuffleArray([...itemData.bonusStatPool]);
+                    const calculateStatValue = (stat) => {
+                        let value;
+                        if (['critChance', 'critDmg'].includes(stat)) {
+                            value = (Math.random() * 0.03 + 0.005) * rarityInfo.statMod * waveScale;
+                        } else {
+                            value = Math.round((Math.random() * 3 + 1) * rarityInfo.statMod * waveScale);
+                        }
+                        return value;
+                    };
+
+                    for (let i = 0; i < rarityInfo.baseStatCount; i++) {
+                        if (statPool.length === 0) break;
+                        const stat = statPool.pop();
+                        newItem[stat] = calculateStatValue(stat);
                     }
 
-                    // Add bonus stats
-                    let availableBonusStats = [...itemData.bonusStatPool];
                     for (let i = 0; i < rarityInfo.bonusStats; i++) {
-                        if (availableBonusStats.length === 0) break;
-                        const statIndex = Math.floor(Math.random() * availableBonusStats.length);
-                        const bonusStat = availableBonusStats.splice(statIndex, 1)[0];
-                        let value;
-                        if (['critChance', 'critDmg'].includes(bonusStat)) {
-                            value = (Math.random() * 0.05 + 0.01) * rarityInfo.statMod;
-                        } else {
-                            value = Math.round((Math.random() * 4 + 1) * rarityInfo.statMod);
-                        }
-                        newItem.bonusStats[bonusStat] = value;
+                        if (statPool.length === 0) break;
+                        const stat = statPool.pop();
+                        newItem.bonusStats[stat] = calculateStatValue(stat);
                     }
 
                     gameState.inventory.push(newItem);
                     const color = rarityInfo.color;
-                    logAction(`You found a [<span style="color:${color}">${rarityKey}</span>] <span style="color:${color}">${newItem.name}</span>!`, 'log-drop');
+                    logAction(`You found a [<span style="color:${color}; font-weight: bold;">${rarityKey}</span>] <span style="color:${color}">${newItem.name}</span>!`, 'log-drop');
                     updateInventoryUI();
                 }
 
@@ -1122,25 +1169,31 @@
                         monsterTemplate = monsters.bosses[(gameState.wave - 1) % monsters.bosses.length];
                     } else {
                         const rand = Math.random();
-                        if (gameState.wave > 1 && rand < 0.15) {
+                        if (gameState.wave > 3 && rand < 0.15) { // Elites appear after wave 3
                             monsterTemplate = monsters.elite[Math.floor(Math.random() * monsters.elite.length)];
+                        } else if (gameState.wave > 1 && rand < 0.20) { // Mutants appear after wave 1 (15% + 5% = 20%)
+                            monsterTemplate = monsters.mutant[Math.floor(Math.random() * monsters.mutant.length)];
                         } else {
                             monsterTemplate = monsters.regular[Math.floor(Math.random() * monsters.regular.length)];
                         }
                     }
 
-                    const scale = Math.pow(1.4, gameState.wave - 1);
+                    const hpScale = Math.pow(1.20, gameState.wave - 1);
+                    const statScale = Math.pow(1.12, gameState.wave - 1);
+                    const goldScale = Math.pow(1.15, gameState.wave - 1);
+                    const xpScale = Math.pow(1.08, gameState.wave - 1);
+
                     gameState.currentMonster = {
                         ...monsterTemplate,
-                        hp: Math.round(monsterTemplate.baseHp * scale),
-                        maxHp: Math.round(monsterTemplate.baseHp * scale),
-                        atk: Math.round(monsterTemplate.baseAtk * scale),
-                        def: Math.round(monsterTemplate.baseDef * scale),
-                        evasion: monsterTemplate.baseEvasion,
+                        hp: Math.round(monsterTemplate.baseHp * hpScale),
+                        maxHp: Math.round(monsterTemplate.baseHp * hpScale),
+                        atk: Math.round(monsterTemplate.baseAtk * statScale),
+                        def: Math.round(monsterTemplate.baseDef * statScale),
+                        evasion: monsterTemplate.baseEvasion + (gameState.wave * 0.001),
                         accuracy: 0,
-                        gold: Math.round(monsterTemplate.gold * scale),
-                        xp: Math.round(monsterTemplate.xp * Math.pow(1.05, gameState.wave - 1)),
-                        isBoss: isBoss,
+                        gold: Math.round(monsterTemplate.gold * goldScale),
+                        xp: Math.round(monsterTemplate.xp * xpScale),
+                        isBoss: isBoss, // Keep for logic, but monsterType is better
                         debuffs: {},
                     };
                     logAction(`A wild ${gameState.currentMonster.name} appears!`, 'log-system');
@@ -1148,14 +1201,13 @@
                 }
 
                 function levelUp() {
-                    gameState.player.level++;
-                    gameState.player.xp = 0;
-                    gameState.player.xpToNextLevel = Math.round(gameState.player.xpToNextLevel * 1.25);
-                    const pointsGained = Math.floor(Math.random() * 3) + 5; // 5-7 points
-                    gameState.player.statPoints += pointsGained;
-
-                    // Apply class growth
                     const p = gameState.player;
+                    p.level++;
+                    p.xp = 0;
+                    p.xpToNextLevel = Math.round(40 * Math.pow(p.level, 1.5));
+                    const pointsGained = Math.floor(Math.random() * 3) + 5; // 5-7 points
+                    p.statPoints += pointsGained;
+
                     let growth = { ...classes[p.baseClassName].growth };
                     const promoAdjust = promotionGrowthAdjustments[p.className];
                     if (promoAdjust) {
@@ -1167,14 +1219,14 @@
                         p.baseStats[stat] += growth[stat];
                     }
 
-                    gameState.player.currentHp = getPlayerTotalStats().hp;
-                    logAction(`LEVEL UP! You are now level ${gameState.player.level}. Gained ${pointsGained} stat points.`, 'log-system');
+                    p.currentHp = getPlayerTotalStats().hp;
+                    logAction(`LEVEL UP! You are now level ${p.level}. Gained ${pointsGained} stat points.`, 'log-system');
                     logAction('Health fully restored!', 'log-system');
-                    if (gameState.player.level >= 70) UIElements.rebirthBtn.style.display = 'block';
+                    if (p.level >= 70) UIElements.rebirthBtn.style.display = 'block';
 
-                    const promotions = classes[gameState.player.baseClassName]?.promotions;
-                    if (promotions && promotions[gameState.player.level]) {
-                        const choiceList = Array.isArray(promotions[gameState.player.level]) ? promotions[gameState.player.level] : promotions[gameState.player.level][gameState.player.className];
+                    const promotions = classes[p.baseClassName]?.promotions;
+                    if (promotions && promotions[p.level]) {
+                        const choiceList = Array.isArray(promotions[p.level]) ? promotions[p.level] : promotions[p.level][p.className];
                         if (choiceList) showPromotionModal(choiceList);
                     }
                     updateAllUIs();
@@ -1400,18 +1452,28 @@
                 function showTooltip(event, item, isEquipped) {
                     clearTimeout(tooltipHideTimer);
                     const tooltip = UIElements.globalTooltip;
-                    let content = `<strong style="color: ${itemData.rarities[item.rarity].color};">${item.name} (${item.type})</strong><br>`;
-                    content += `Rarity: ${item.rarity} | Class: ${item.classReq}<br>----<br>`;
+                    let content = `<strong style="color: ${itemData.rarities[item.rarity].color}; font-weight: bold;">${item.name} (${item.type})</strong><br>`;
+                    content += `Rarity: <span style="color: ${itemData.rarities[item.rarity].color}; font-weight: bold;">${item.rarity}</span> | Class: ${item.classReq}<br>----<br>`;
 
-                    for (const stat in STAT_NAMES) {
-                        const baseVal = item[stat] || 0;
-                        const bonusVal = item.bonusStats?.[stat] || 0;
-                        const totalVal = baseVal + bonusVal;
-                        if (totalVal > 0) {
-                            const displayVal = (['critChance', 'critDmg'].includes(stat)) ? `+${(totalVal * 100).toFixed(1)}%` : `+${Math.round(totalVal)}`;
+                    // Display Base Stats
+                    let hasBaseStats = false;
+                    for (const stat in item) {
+                        if (STAT_NAMES[stat] && typeof item[stat] === 'number') {
+                            hasBaseStats = true;
+                            const displayVal = (['critChance', 'critDmg'].includes(stat)) ? `+${(item[stat] * 100).toFixed(1)}%` : `+${Math.round(item[stat])}`;
                             content += `${STAT_NAMES[stat]}: ${displayVal}<br>`;
                         }
                     }
+
+                    // Display Bonus Stats
+                    if (Object.keys(item.bonusStats).length > 0) {
+                        if (hasBaseStats) content += `---- (Bonus) ----<br>`;
+                        for (const stat in item.bonusStats) {
+                            const displayVal = (['critChance', 'critDmg'].includes(stat)) ? `+${(item.bonusStats[stat] * 100).toFixed(1)}%` : `+${Math.round(item.bonusStats[stat])}`;
+                            content += `${STAT_NAMES[stat]}: ${displayVal}<br>`;
+                        }
+                    }
+
                     content += `----<br>Sell Value: ${itemData.rarities[item.rarity].value}G`;
                     tooltip.innerHTML = content;
 
@@ -1545,7 +1607,7 @@
                         gameState.gold -= cost;
                         const healAmount = totalStats.hp * (percent / 100);
                         gameState.player.currentHp = Math.min(totalStats.hp, gameState.player.currentHp + healAmount);
-                        gameState.potionCosts[`p${percent}`] = Math.round(cost * 1.05);
+                        gameState.potionCosts[`p${percent}`] = Math.round(cost * 1.03);
                         logAction(`You drink a potion, restoring health.`, 'log-system');
                         updateUI();
                     }
