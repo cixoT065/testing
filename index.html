@@ -28,6 +28,7 @@
             --stat-dex: #c9c27d;
             --stat-agl: #c99b7d;
             --stat-int: #a37dc9;
+            --set-bonus-active: #63C270;
         }
 
         body {
@@ -285,32 +286,14 @@
             margin-bottom: 15px;
         }
 
-        .log-player {
-            color: #bbbbbb;
-        }
+        /* Log Colors */
+        .log-player { color: #c5c5c5; }
+        .log-monster { color: #e06c75; }
+        .log-system { color: #9e9e9e; font-style: italic; }
+        .log-drop { color: #d7ba7d; }
+        .log-error { color: #ff6b6b; font-weight: bold; }
+        .log-skill { color: #61afef; font-weight: bold; }
 
-        .log-monster {
-            color: #999999;
-        }
-
-        .log-system {
-            color: #e0e0e0;
-        }
-
-        .log-drop {
-            color: var(--gold-color);
-        }
-
-        .log-error {
-            color: #ffffff;
-            font-weight: bold;
-        }
-
-        .log-skill {
-            color: var(--skill-color);
-            font-style: italic;
-            font-weight: bold;
-        }
 
         .point-investment-stat,
         .rebirth-stat {
@@ -678,7 +661,7 @@
                 let gameInterval;
                 let autoSaveInterval;
                 let tooltipHideTimer;
-                const SAVE_KEY = 'idleRpgSaveData_v7_monsterUpdate'; // Changed key for new structure
+                const SAVE_KEY = 'idleRpgSaveData_v8_setsAndScaling'; // Changed key for new structure
 
                 const STAT_NAMES = {
                     str: 'STR', con: 'CON', def: 'DEF', dex: 'DEX',
@@ -794,6 +777,33 @@
                             Rogue: ['Swift', 'Silent', 'Vicious', 'Shadow', 'Assassin\'s'],
                             Wizard: ['Arcane', 'Mystic', 'Elemental', 'Warlock\'s', 'Sage\'s'],
                             Balanced: ['Fine', 'Superior', 'Masterwork', 'Exquisite', 'Perfect']
+                        }
+                    }
+                };
+
+                const itemSets = {
+                    "Stonewall Plate": {
+                        class: "Warrior",
+                        items: ["Stonewall Greathelm", "Stonewall Chestplate", "Stonewall Greaves"],
+                        bonuses: {
+                            2: { def: 30, description: "2pc: +30 DEF" },
+                            3: { hpPercent: 0.15, description: "3pc: +15% Max HP" }
+                        }
+                    },
+                    "Undead King's Regalia": {
+                        class: "Rogue",
+                        items: ["Undead King's Dagger", "Undead King's Robe", "Undead King's Slippers"],
+                        bonuses: {
+                            2: { agl: 20, description: "2pc: +20 AGL" },
+                            3: { critDmg: 0.25, description: "3pc: +25% Crit Damage" }
+                        }
+                    },
+                    "Archon's Raiment": {
+                        class: "Wizard",
+                        items: ["Archon's Crown", "Archon's Mantle", "Archon's Treads"],
+                        bonuses: {
+                            2: { int: 25, description: "2pc: +25 INT" },
+                            3: { critChance: 0.05, description: "3pc: +5% Crit Chance" }
                         }
                     }
                 };
@@ -945,35 +955,60 @@
                         totals[stat] = (p.baseStats[stat] || 0);
                         if (p.investedStats[stat]) {
                             if (stat === 'critChance') totals[stat] += p.investedStats[stat] * 0.002;
-                            else if (stat === 'critDmg') totals[stat] += p.investedStats[stat] * 0.005; // 0.5% per point
+                            else if (stat === 'critDmg') totals[stat] += p.investedStats[stat] * 0.005;
                             else totals[stat] += p.investedStats[stat];
                         }
                     }
 
+                    const equippedSets = {};
                     // Add equipment stats
                     for (const type in gameState.equipment) {
                         const item = gameState.inventory.find(i => i.id === gameState.equipment[type]);
                         if (item) {
-                            // Sum base stats from item
+                            if (item.setName) {
+                                equippedSets[item.setName] = (equippedSets[item.setName] || 0) + 1;
+                            }
                             for (const stat in item) {
                                 if (STAT_NAMES[stat] && typeof item[stat] === 'number') {
                                     totals[stat] = (totals[stat] || 0) + item[stat];
                                 }
                             }
-                            // Sum bonus stats from item
                             for (const stat in item.bonusStats) {
                                 totals[stat] = (totals[stat] || 0) + item.bonusStats[stat];
                             }
                         }
                     }
 
-                    // Calculate derived stats
+                    // Calculate derived stats first
                     const primaryStat = classes[p.baseClassName].primaryStat;
                     totals.atk = totals[primaryStat] + (gameState.rebirth.bonuses.atk || 0);
                     totals.def += (gameState.rebirth.bonuses.def || 0);
                     totals.hp = 50 + (totals.con * 5) + (gameState.rebirth.bonuses.hp || 0);
                     totals.accuracy = totals.dex * 0.002;
                     totals.evasion = totals.agl * 0.001;
+
+                    // Apply set bonuses
+                    let hpPercentBonus = 0;
+                    for (const setName in equippedSets) {
+                        const setInfo = itemSets[setName];
+                        const count = equippedSets[setName];
+                        for (let i = 2; i <= count; i++) {
+                            if (setInfo.bonuses[i]) {
+                                for (const bonusStat in setInfo.bonuses[i]) {
+                                    if (bonusStat === 'description') continue;
+                                    if (bonusStat === 'hpPercent') {
+                                        hpPercentBonus += setInfo.bonuses[i][bonusStat];
+                                    } else {
+                                        totals[bonusStat] = (totals[bonusStat] || 0) + setInfo.bonuses[i][bonusStat];
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (hpPercentBonus > 0) {
+                        totals.hp *= (1 + hpPercentBonus);
+                    }
+
 
                     // Skill-based modifications
                     if (p.activeSkills.includes('Frenzy')) {
@@ -1064,7 +1099,7 @@
                     logAction('You have been defeated!', 'log-monster');
                     const xpPenalty = Math.round(gameState.player.xpToNextLevel * 0.10);
                     gameState.player.xp = Math.max(0, gameState.player.xp - xpPenalty);
-                    logAction(`You lose ${xpPenalty} XP.`, 'log-error');
+                    logAction(`As a penalty, you lose ${xpPenalty} XP.`, 'log-error');
                     gameState.player.currentHp = getPlayerTotalStats().hp * 0.5;
                     logAction(`You revive with 50% health.`, 'log-system');
                     if (gameState.currentMonster.monsterType === 'boss') {
@@ -1105,33 +1140,52 @@
                     const classChoices = ['Warrior', 'Rogue', 'Wizard'];
                     const classForDrop = classChoices[Math.floor(Math.random() * classChoices.length)];
                     const itemType = itemData.types[Math.floor(Math.random() * itemData.types.length)];
-                    const possibleNames = itemData.names[itemType][classForDrop];
-                    const baseName = possibleNames[Math.floor(Math.random() * possibleNames.length)];
-                    const prefix = itemData.names.prefixes.Balanced[Math.floor(Math.random() * itemData.names.prefixes.Balanced.length)];
 
                     const probs = getRarityProbabilities(monster.monsterType);
                     const rand = Math.random();
                     let cumulativeProb = 0;
                     let rarityKey = 'N'; // Default
-                    if (rand < (cumulativeProb += probs.N)) rarityKey = 'N';
-                    else if (rand < (cumulativeProb += probs.R)) rarityKey = 'R';
-                    else if (rand < (cumulativeProb += probs.SR)) rarityKey = 'SR';
-                    else if (rand < (cumulativeProb += probs.SSR)) rarityKey = 'SSR';
-                    else if (rand < (cumulativeProb += probs.UR)) rarityKey = 'UR';
-                    else if (rand < (cumulativeProb += probs.LR)) rarityKey = 'LR';
-
+                    for (const rarity in probs) {
+                        if (rand < (cumulativeProb += probs[rarity])) {
+                            rarityKey = rarity;
+                            break;
+                        }
+                    }
 
                     const rarityInfo = itemData.rarities[rarityKey];
-                    const waveScale = 1 + (gameState.wave / 50);
+                    const waveScale = 1 + Math.log10(gameState.wave || 1); // Logarithmic scaling for stats
+                    const SET_ITEM_CHANCE = 0.10; // 10% chance for SR+ items to be a set item
 
                     const newItem = {
                         id: Date.now() + Math.random(),
-                        name: `${prefix} ${baseName}`,
                         type: itemType,
                         rarity: rarityKey,
                         classReq: classForDrop,
-                        bonusStats: {}
+                        bonusStats: {},
+                        setName: null
                     };
+
+                    let itemName;
+                    // Check for set item generation
+                    if (['SR', 'SSR', 'UR', 'LR'].includes(rarityKey) && Math.random() < SET_ITEM_CHANCE) {
+                        const possibleSets = Object.keys(itemSets).filter(name => itemSets[name].class === classForDrop);
+                        if (possibleSets.length > 0) {
+                            const selectedSetName = possibleSets[Math.floor(Math.random() * possibleSets.length)];
+                            newItem.setName = selectedSetName;
+                            const setItemNames = itemSets[selectedSetName].items;
+                            itemName = setItemNames[Math.floor(Math.random() * setItemNames.length)];
+                        }
+                    }
+
+                    // Generate a regular name if not a set item
+                    if (!newItem.setName) {
+                        const possibleNames = itemData.names[itemType][classForDrop];
+                        const baseName = possibleNames[Math.floor(Math.random() * possibleNames.length)];
+                        const prefix = itemData.names.prefixes.Balanced[Math.floor(Math.random() * itemData.names.prefixes.Balanced.length)];
+                        itemName = `${prefix} ${baseName}`;
+                    }
+                    newItem.name = itemName;
+
 
                     const statPool = shuffleArray([...itemData.bonusStatPool]);
                     const calculateStatValue = (stat) => {
@@ -1171,7 +1225,7 @@
                         const rand = Math.random();
                         if (gameState.wave > 3 && rand < 0.15) { // Elites appear after wave 3
                             monsterTemplate = monsters.elite[Math.floor(Math.random() * monsters.elite.length)];
-                        } else if (gameState.wave > 1 && rand < 0.20) { // Mutants appear after wave 1 (15% + 5% = 20%)
+                        } else if (gameState.wave > 1 && rand < 0.30) { // Mutants appear after wave 1 (15% chance)
                             monsterTemplate = monsters.mutant[Math.floor(Math.random() * monsters.mutant.length)];
                         } else {
                             monsterTemplate = monsters.regular[Math.floor(Math.random() * monsters.regular.length)];
@@ -1193,7 +1247,7 @@
                         accuracy: 0,
                         gold: Math.round(monsterTemplate.gold * goldScale),
                         xp: Math.round(monsterTemplate.xp * xpScale),
-                        isBoss: isBoss, // Keep for logic, but monsterType is better
+                        isBoss: isBoss,
                         debuffs: {},
                     };
                     logAction(`A wild ${gameState.currentMonster.name} appears!`, 'log-system');
@@ -1452,8 +1506,11 @@
                 function showTooltip(event, item, isEquipped) {
                     clearTimeout(tooltipHideTimer);
                     const tooltip = UIElements.globalTooltip;
+
+                    const classColor = item.classReq === gameState.player.baseClassName ? 'var(--text-color)' : '#e06c75';
+
                     let content = `<strong style="color: ${itemData.rarities[item.rarity].color}; font-weight: bold;">${item.name} (${item.type})</strong><br>`;
-                    content += `Rarity: <span style="color: ${itemData.rarities[item.rarity].color}; font-weight: bold;">${item.rarity}</span> | Class: ${item.classReq}<br>----<br>`;
+                    content += `Rarity: <span style="color: ${itemData.rarities[item.rarity].color}; font-weight: bold;">${item.rarity}</span> | Class: <span style="color:${classColor};">${item.classReq}</span><br>----<br>`;
 
                     // Display Base Stats
                     let hasBaseStats = false;
@@ -1473,6 +1530,18 @@
                             content += `${STAT_NAMES[stat]}: ${displayVal}<br>`;
                         }
                     }
+
+                    // Display Set Info
+                    if (item.setName) {
+                        content += `----<br><strong>${item.setName}</strong><br>`;
+                        const setInfo = itemSets[item.setName];
+                        const equippedCount = gameState.inventory.filter(i => i.setName === item.setName && Object.values(gameState.equipment).includes(i.id)).length;
+                        for (const count in setInfo.bonuses) {
+                            const bonusIsActive = equippedCount >= count;
+                            content += `<span style="color: ${bonusIsActive ? 'var(--set-bonus-active)' : 'var(--disabled-text-color)'};">${setInfo.bonuses[count].description}</span><br>`;
+                        }
+                    }
+
 
                     content += `----<br>Sell Value: ${itemData.rarities[item.rarity].value}G`;
                     tooltip.innerHTML = content;
@@ -1500,14 +1569,14 @@
                         return;
                     }
                     gameState.equipment[itemToEquip.type] = itemToEquip.id;
-                    logAction(`Equipped [${itemToEquip.rarity}] ${itemToEquip.name}.`, 'log-system');
+                    logAction(`Equipped <span style="color:${itemData.rarities[itemToEquip.rarity].color};">${itemToEquip.name}</span>.`, 'log-system');
                     updateAllUIs();
                 }
 
                 function unequipItem(itemType) {
                     const itemToUnequip = gameState.inventory.find(item => item.id === gameState.equipment[itemType]);
                     gameState.equipment[itemType] = null;
-                    if (itemToUnequip) logAction(`Unequipped [${itemToUnequip.rarity}] ${itemToUnequip.name}.`, 'log-system');
+                    if (itemToUnequip) logAction(`Unequipped <span style="color:${itemData.rarities[itemToUnequip.rarity].color};">${itemToUnequip.name}</span>.`, 'log-system');
                     updateAllUIs();
                 }
 
@@ -1521,7 +1590,7 @@
                     const sellValue = itemData.rarities[item.rarity].value;
                     gameState.gold += sellValue;
                     gameState.inventory.splice(itemIndex, 1);
-                    logAction(`Sold [${item.rarity}] ${item.name} for ${sellValue}G.`, 'log-system');
+                    logAction(`Sold <span style="color:${itemData.rarities[item.rarity].color};">${item.name}</span> for ${sellValue}G.`, 'log-system');
                     hideTooltip();
                     updateAllUIs();
                 }
