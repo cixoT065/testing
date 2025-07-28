@@ -696,8 +696,11 @@
             document.addEventListener('DOMContentLoaded', () => {
                 let gameInterval;
                 let autoSaveInterval;
-                let tooltipHideTimer;
-                const SAVE_KEY = 'idleRpgSaveData_v11_comparison'; // Changed key for new structure
+                let activeTooltip = {
+                    target: null,
+                    itemId: null
+                };
+                const SAVE_KEY = 'idleRpgSaveData_v12_mobileTooltip'; // Changed key for new structure
 
                 const STAT_NAMES = {
                     str: 'STR', con: 'CON', def: 'DEF', dex: 'DEX',
@@ -1554,11 +1557,10 @@
                     });
 
                     list.querySelectorAll('.inventory-item-info').forEach(el => {
-                        el.onmouseover = (e) => {
+                        el.onclick = (e) => {
                             const item = gameState.inventory.find(i => i.id == e.currentTarget.dataset.itemId);
-                            if (item) showTooltip(e, item, equippedIds.includes(item.id));
+                            if (item) handleTooltipToggle(e, item, equippedIds.includes(item.id));
                         };
-                        el.onmouseout = hideTooltip;
                     });
                     list.querySelectorAll('.equip-btn').forEach(btn => {
                         btn.onclick = (e) => {
@@ -1585,19 +1587,29 @@
                         let nameHTML = '---';
                         if (item) {
                             nameHTML = `<span style="color: ${itemData.rarities[item.rarity].color};">${item.name}</span>`;
-                            itemSlot.onclick = () => unequipItem(type);
-                            itemSlot.onmouseover = (e) => showTooltip(e, item, true);
-                            itemSlot.onmouseout = hideTooltip;
+                            itemSlot.onclick = (e) => handleTooltipToggle(e, item, true);
                         }
                         itemSlot.innerHTML = `<strong>${type.charAt(0).toUpperCase() + type.slice(1)}:</strong> ${nameHTML}`;
                         display.appendChild(itemSlot);
                     });
                 }
 
-                function showTooltip(event, item, isEquipped) {
-                    clearTimeout(tooltipHideTimer);
-                    const tooltip = UIElements.globalTooltip;
+                function handleTooltipToggle(event, item, isEquipped) {
+                    event.stopPropagation();
+                    if (activeTooltip.itemId === item.id) {
+                        hideTooltip();
+                    } else {
+                        showTooltip(event.currentTarget, item, isEquipped);
+                    }
+                }
 
+                function showTooltip(targetElement, item, isEquipped) {
+                    hideTooltip(); // Hide any existing tooltip first
+                    
+                    activeTooltip.target = targetElement;
+                    activeTooltip.itemId = item.id;
+                    
+                    const tooltip = UIElements.globalTooltip;
                     const classColor = item.classReq === gameState.player.baseClassName ? 'var(--text-color)' : '#e06c75';
 
                     let content = `<strong style="color: ${itemData.rarities[item.rarity].color}; font-weight: bold;">${item.name} (${item.type})</strong><br>`;
@@ -1667,25 +1679,36 @@
                         if (hasComparison) content += comparisonContent;
                     }
 
-
                     content += `----<br>Sell Value: ${itemData.rarities[item.rarity].value}G`;
                     tooltip.innerHTML = content;
 
                     tooltip.style.display = 'block';
-                    const targetRect = event.currentTarget.getBoundingClientRect();
+                    const targetRect = targetElement.getBoundingClientRect();
                     const tooltipRect = tooltip.getBoundingClientRect();
-                    let top = targetRect.top - tooltipRect.height - 5;
+                    let top = targetRect.bottom + 5;
                     let left = targetRect.left + (targetRect.width / 2) - (tooltipRect.width / 2);
-                    if (top < 0) top = targetRect.bottom + 5;
+                    if (top + tooltipRect.height > window.innerHeight) top = targetRect.top - tooltipRect.height - 5;
                     if (left < 0) left = 5;
                     if (left + tooltipRect.width > window.innerWidth) left = window.innerWidth - tooltipRect.width - 5;
                     tooltip.style.top = `${top}px`;
                     tooltip.style.left = `${left}px`;
+                    
+                    setTimeout(() => window.addEventListener('click', handleDocumentClickForTooltip), 0);
                 }
 
                 function hideTooltip() {
-                    clearTimeout(tooltipHideTimer);
-                    tooltipHideTimer = setTimeout(() => { UIElements.globalTooltip.style.display = 'none'; }, 200);
+                    if (activeTooltip.target) {
+                        UIElements.globalTooltip.style.display = 'none';
+                        activeTooltip.target = null;
+                        activeTooltip.itemId = null;
+                        window.removeEventListener('click', handleDocumentClickForTooltip);
+                    }
+                }
+                
+                function handleDocumentClickForTooltip(event) {
+                    if (activeTooltip.target && !activeTooltip.target.contains(event.target) && !UIElements.globalTooltip.contains(event.target)) {
+                        hideTooltip();
+                    }
                 }
 
                 function equipItem(itemToEquip) {
@@ -1695,6 +1718,7 @@
                     }
                     gameState.equipment[itemToEquip.type] = itemToEquip.id;
                     logAction(`Equipped <span style="color:${itemData.rarities[itemToEquip.rarity].color};">${itemToEquip.name}</span>.`, 'log-system');
+                    hideTooltip();
                     updateAllUIs();
                 }
 
@@ -1702,6 +1726,7 @@
                     const itemToUnequip = gameState.inventory.find(item => item.id === gameState.equipment[itemType]);
                     gameState.equipment[itemType] = null;
                     if (itemToUnequip) logAction(`Unequipped <span style="color:${itemData.rarities[itemToUnequip.rarity].color};">${itemToUnequip.name}</span>.`, 'log-system');
+                    hideTooltip();
                     updateAllUIs();
                 }
 
@@ -1882,8 +1907,6 @@
                 });
                 UIElements.sellNBtn.onclick = () => sellItemsByRarity('N');
                 UIElements.sellRBtn.onclick = () => sellItemsByRarity('R');
-                UIElements.globalTooltip.onmouseover = () => clearTimeout(tooltipHideTimer);
-                UIElements.globalTooltip.onmouseout = hideTooltip;
                 UIElements.confirmInvestBtn.onclick = confirmPointInvestment;
                 UIElements.resetInvestBtn.onclick = resetPointInvestment;
 
