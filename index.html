@@ -29,6 +29,7 @@
             --stat-agl: #c99b7d;
             --stat-int: #a37dc9;
             --set-bonus-active: #63C270;
+            --selection-color: #61afef;
         }
 
         body {
@@ -264,8 +265,14 @@
         .modal-choices button {
             width: auto;
             padding: 12px 20px;
+            border: 2px solid transparent;
         }
         
+        .modal-choices button.selected {
+            border-color: var(--selection-color);
+            background-color: #555;
+        }
+
         .modal-description {
             min-height: 60px;
             margin-top: 20px;
@@ -275,6 +282,10 @@
             border: 1px solid var(--border-color);
             color: #b0b0b0;
             font-style: italic;
+        }
+        
+        .modal-footer-confirm {
+            margin-top: 20px;
         }
 
         #manual-save-textarea {
@@ -640,22 +651,30 @@
         <div id="class-selection-modal" class="modal">
             <div class="modal-content">
                 <h2>Choose Your Class</h2>
-                <div class="modal-choices">
-                    <button id="select-warrior">Warrior</button>
-                    <button id="select-rogue">Rogue</button>
-                    <button id="select-wizard">Wizard</button>
+                <div class="modal-choices" id="class-selection-choices">
+                    <button data-class="Warrior">Warrior</button>
+                    <button data-class="Rogue">Rogue</button>
+                    <button data-class="Wizard">Wizard</button>
                 </div>
-                <p id="class-description" class="modal-description">Hover over a class to learn more.</p>
+                <p id="class-description" class="modal-description">Select a class to learn more.</p>
+                <div class="modal-footer-confirm">
+                    <button id="confirm-class-btn" disabled>Confirm Selection</button>
+                </div>
             </div>
         </div>
+
         <div id="promotion-modal" class="modal">
             <div class="modal-content">
                 <h2 id="promotion-title">Class Promotion!</h2>
                 <p id="promotion-text">You have reached a new milestone. Choose your path:</p>
                 <div class="modal-choices" id="promotion-choices"></div>
-                <p id="promotion-description" class="modal-description">Hover over a promotion to learn more.</p>
+                <p id="promotion-description" class="modal-description">Select a promotion to learn more.</p>
+                <div class="modal-footer-confirm">
+                    <button id="confirm-promotion-btn" disabled>Confirm Promotion</button>
+                </div>
             </div>
         </div>
+
         <div id="manual-save-modal" class="modal">
             <div class="modal-content">
                 <h2>Game Saved!</h2>
@@ -673,7 +692,7 @@
                 let gameInterval;
                 let autoSaveInterval;
                 let tooltipHideTimer;
-                const SAVE_KEY = 'idleRpgSaveData_v9_descriptions'; // Changed key for new structure
+                const SAVE_KEY = 'idleRpgSaveData_v10_mobileFix'; // Changed key for new structure
 
                 const STAT_NAMES = {
                     str: 'STR', con: 'CON', def: 'DEF', dex: 'DEX',
@@ -689,7 +708,9 @@
                         maxInventorySize: 20,
                         rebirth: { points: 0, bonuses: { atk: 0, def: 0, hp: 0, gold: 0, xp: 0 } },
                         playerTemp: {
-                            pointAllocation: { str: 0, con: 0, def: 0, dex: 0, agl: 0, int: 0, critChance: 0, critDmg: 0 }
+                            pointAllocation: { str: 0, con: 0, def: 0, dex: 0, agl: 0, int: 0, critChance: 0, critDmg: 0 },
+                            classSelection: null,
+                            promotionSelection: null,
                         }
                     };
                 }
@@ -789,7 +810,7 @@
                         SR:  { color: '#6386C2',  statMod: 1.5, value: 40,  baseStatCount: 2, bonusStats: 2 },
                         SSR: { color: '#9663C2',  statMod: 2.0, value: 200, baseStatCount: 2, bonusStats: 3 },
                         UR:  { color: '#C29463',  statMod: 2.8, value: 1000,baseStatCount: 3, bonusStats: 4 },
-                        LR:  { color: '#D92121',  statMod: 3.5, value: 5000,baseStatCount: 5, bonusStats: 4 },
+                        LR:  { color: '#FFD700',  statMod: 3.5, value: 5000,baseStatCount: 5, bonusStats: 4 },
                     },
                     bonusStatPool: Object.keys(STAT_NAMES),
                     names: {
@@ -857,7 +878,11 @@
                     waveCounter: document.getElementById('wave-counter'), killCounter: document.getElementById('kill-counter'), actionLog: document.getElementById('action-log'),
                     challengeBossBtn: document.getElementById('challenge-boss-btn'),
                     classSelectionModal: document.getElementById('class-selection-modal'), promotionModal: document.getElementById('promotion-modal'),
+                    classSelectionChoices: document.getElementById('class-selection-choices'),
+                    promotionChoices: document.getElementById('promotion-choices'),
                     classDescription: document.getElementById('class-description'), promotionDescription: document.getElementById('promotion-description'),
+                    confirmClassBtn: document.getElementById('confirm-class-btn'),
+                    confirmPromotionBtn: document.getElementById('confirm-promotion-btn'),
                     inventoryList: document.getElementById('inventory-list'), equipmentDisplay: document.getElementById('equipment-display'),
                     newGameBtn: document.getElementById('new-game-btn'), rebirthBtn: document.getElementById('rebirth-btn'),
                     manualSaveBtn: document.getElementById('manual-save-btn'), manualLoadBtn: document.getElementById('manual-load-btn'),
@@ -1326,28 +1351,37 @@
 
                 function showPromotionModal(choices) {
                     gameState.isRunning = false;
-                    const promotionChoices = document.getElementById('promotion-choices');
+                    UIElements.promotionDescription.textContent = 'Select a promotion to learn more.';
+                    UIElements.confirmPromotionBtn.disabled = true;
+                    
+                    const promotionChoices = UIElements.promotionChoices;
                     promotionChoices.innerHTML = '';
-                    UIElements.promotionDescription.textContent = 'Hover over a promotion to learn more.';
+
                     choices.forEach(choice => {
                         const btn = document.createElement('button');
                         btn.textContent = choice;
+                        btn.dataset.promotion = choice;
                         btn.onclick = () => {
-                            gameState.player.className = choice;
-                            logAction(`You have been promoted to ${choice}!`, 'log-system');
+                            gameState.playerTemp.promotionSelection = choice;
+                            UIElements.promotionDescription.textContent = promotionInfo[choice]?.description || 'No information available.';
+                            promotionChoices.querySelectorAll('button').forEach(b => b.classList.remove('selected'));
+                            btn.classList.add('selected');
+                            UIElements.confirmPromotionBtn.disabled = false;
+                        };
+                        promotionChoices.appendChild(btn);
+                    });
+
+                    UIElements.confirmPromotionBtn.onclick = () => {
+                        if (gameState.playerTemp.promotionSelection) {
+                            gameState.player.className = gameState.playerTemp.promotionSelection;
+                            logAction(`You have been promoted to ${gameState.player.className}!`, 'log-system');
                             gameState.player.currentHp = getPlayerTotalStats().hp;
                             UIElements.promotionModal.style.display = 'none';
                             gameState.isRunning = true;
                             updateAllUIs();
-                        };
-                        btn.onmouseover = () => {
-                            UIElements.promotionDescription.textContent = promotionInfo[choice]?.description || 'No information available.';
-                        };
-                        btn.onmouseout = () => {
-                            UIElements.promotionDescription.textContent = 'Hover over a promotion to learn more.';
-                        };
-                        promotionChoices.appendChild(btn);
-                    });
+                        }
+                    };
+                    
                     UIElements.promotionModal.style.display = 'flex';
                 }
 
@@ -1652,7 +1686,9 @@
 
                 function resetTransientData() {
                     gameState.playerTemp = {
-                        pointAllocation: { str: 0, con: 0, def: 0, dex: 0, agl: 0, int: 0, critChance: 0, critDmg: 0 }
+                        pointAllocation: { str: 0, con: 0, def: 0, dex: 0, agl: 0, int: 0, critChance: 0, critDmg: 0 },
+                        classSelection: null,
+                        promotionSelection: null,
                     };
                     if (gameState.currentMonster) gameState.currentMonster.debuffs = {};
                 }
@@ -1757,28 +1793,29 @@
                 }
                 
                 function setupClassSelectionEvents() {
-                    const defaultText = 'Hover over a class to learn more.';
-                    const classButtons = [
-                        { id: 'select-warrior', className: 'Warrior' },
-                        { id: 'select-rogue', className: 'Rogue' },
-                        { id: 'select-wizard', className: 'Wizard' }
-                    ];
+                    const choiceButtons = UIElements.classSelectionChoices.querySelectorAll('button');
+                    
+                    choiceButtons.forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            const className = btn.dataset.class;
+                            gameState.playerTemp.classSelection = className;
+                            UIElements.classDescription.textContent = classes[className].description;
+                            
+                            choiceButtons.forEach(b => b.classList.remove('selected'));
+                            btn.classList.add('selected');
+                            
+                            UIElements.confirmClassBtn.disabled = false;
+                        });
+                    });
 
-                    classButtons.forEach(cb => {
-                        const btn = document.getElementById(cb.id);
-                        btn.onmouseover = () => {
-                            UIElements.classDescription.textContent = classes[cb.className].description;
-                        };
-                        btn.onmouseout = () => {
-                             UIElements.classDescription.textContent = defaultText;
-                        };
+                    UIElements.confirmClassBtn.addEventListener('click', () => {
+                        if (gameState.playerTemp.classSelection) {
+                            selectClass(gameState.playerTemp.classSelection);
+                        }
                     });
                 }
 
                 // --- EVENT LISTENERS ---
-                document.getElementById('select-warrior').onclick = () => selectClass('Warrior');
-                document.getElementById('select-rogue').onclick = () => selectClass('Rogue');
-                document.getElementById('select-wizard').onclick = () => selectClass('Wizard');
                 UIElements.manualSaveBtn.onclick = manualSave;
                 UIElements.manualLoadBtn.onclick = manualLoad;
                 UIElements.closeSaveModalBtn.onclick = () => { UIElements.manualSaveModal.style.display = 'none'; };
