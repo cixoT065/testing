@@ -60,7 +60,7 @@
             gap: 15px;
             overflow-y: auto;
             flex-shrink: 0;
-            min-height: 0; /* <-- Add this line here as well */
+            min-height: 0;
         }
 
         .main-content {
@@ -70,7 +70,7 @@
             flex-direction: column;
             gap: 15px;
             overflow-y: auto;
-            min-height: 0; /* <-- Add this line */
+            min-height: 0;
         }
 
         .panel {
@@ -379,7 +379,7 @@
             border-bottom: 1px solid var(--border-color);
         }
 
-        .tab-button, .log-tab-button {
+        .tab-button {
             flex: 1;
             border: none;
             background-color: var(--panel-bg-color);
@@ -392,17 +392,17 @@
             border-bottom: 3px solid transparent;
         }
 
-        .tab-button.active, .log-tab-button.active {
+        .tab-button.active {
             border-bottom-color: var(--text-color);
             font-weight: bold;
             background-color: var(--header-bg-color);
         }
 
-        .tab-content, .log-tab-content {
+        .tab-content {
             display: none;
         }
 
-        .tab-content.active, .log-tab-content.active {
+        .tab-content.active {
             display: block;
         }
 
@@ -540,6 +540,18 @@
             margin: 5px 0;
         }
 
+        /* NEW LOG CONTAINER STYLES */
+        .log-area-container {
+            display: flex;
+            gap: 15px;
+            flex-grow: 1;
+            min-height: 0; /* Critical for flexbox scrolling */
+        }
+
+        .log-area-container .panel {
+            flex: 1; /* Each log panel takes up half the space */
+        }
+
         @media (max-width: 900px) {
             .main-container {
                 flex-direction: column;
@@ -565,6 +577,11 @@
                 order: 99;
                 margin-top: 0;
                 margin-bottom: 0;
+            }
+
+            /* Stack logs on smaller screens */
+            .log-area-container {
+                flex-direction: column;
             }
         }
     </style>
@@ -737,15 +754,19 @@
                     </div>
                 </div>
             </div>
-            <div class="panel" style="flex-grow: 1; display: flex; flex-direction: column;">
-                <div class="tab-buttons">
-                    <button class="log-tab-button active" data-log-tab="event">Event Log</button>
-                    <button class="log-tab-button" data-log-tab="battle">Battle Log</button>
-                </div>
-                <div class="panel-body" style="padding: 0; flex-grow: 1; position: relative;">
-                    <div id="event-log" class="log-tab-content active activity-log-container" style="border: none; border-radius: 0; height: 100%; width: 100%; position: absolute; top: 0; left: 0;">
+            
+            <!-- NEW LOG AREA -->
+            <div class="log-area-container">
+                <div class="panel">
+                    <div class="panel-header">Event Log</div>
+                    <div class="panel-body" style="padding: 0; flex-grow: 1;">
+                        <div id="event-log" class="activity-log-container" style="border: none; border-radius: 0; height: 100%;"></div>
                     </div>
-                    <div id="battle-log" class="log-tab-content activity-log-container" style="display: none; border: none; border-radius: 0; height: 100%; width: 100%; position: absolute; top: 0; left: 0;">
+                </div>
+                <div class="panel">
+                    <div class="panel-header">Battle Log</div>
+                    <div class="panel-body" style="padding: 0; flex-grow: 1;">
+                        <div id="battle-log" class="activity-log-container" style="border: none; border-radius: 0; height: 100%;"></div>
                     </div>
                 </div>
             </div>
@@ -1182,7 +1203,6 @@
 
                 function initializeGame() {
                     setupTabs();
-                    setupLogTabs();
                     setupClassSelectionEvents();
                     if (loadFromLocalStorage()) {
                         UIElements.classSelectionModal.style.display = 'none';
@@ -2646,19 +2666,6 @@
                             if (tabId === 'blacksmith') {
                                 updateBlacksmithUI();
                             }
-                        });
-                    });
-                }
-
-                function setupLogTabs() {
-                    document.querySelectorAll('.log-tab-button').forEach(button => {
-                        button.addEventListener('click', () => {
-                            document.querySelectorAll('.log-tab-button').forEach(btn => btn.classList.remove('active'));
-                            button.classList.add('active');
-                            const tabId = button.getAttribute('data-log-tab');
-                            document.querySelectorAll('.log-tab-content').forEach(content => {
-                                content.classList.toggle('active', content.id === `${tabId}-log`);
-                            });
                         });
                     });
                 }
