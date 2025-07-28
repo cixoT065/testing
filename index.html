@@ -75,6 +75,14 @@
             box-shadow: inset 0 0 10px #000;
         }
 
+        .panel-footer {
+            padding: 10px;
+            border-top: 1px solid var(--border-color);
+            background-color: var(--header-bg-color);
+            display: flex;
+            gap: 10px;
+        }
+
         #system-panel {
             margin-top: auto;
         }
@@ -310,26 +318,38 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 8px;
+            font-size: 13px;
         }
 
-        .point-investment-stat span,
-        .rebirth-stat span {
-            color: var(--text-color);
+        .point-investment-stat .stat-label {
+            flex-grow: 1;
         }
 
-        .point-investment-stat .stat-value,
-        .rebirth-stat .rebirth-value {
-            color: var(--rebirth-color);
-            font-weight: bold;
+        .investment-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .point-investment-stat button,
-        .rebirth-stat button {
-            width: 30px;
-            height: 30px;
+        .investment-controls button {
+            width: 28px;
+            height: 28px;
             padding: 0;
             font-size: 1.2em;
             flex-shrink: 0;
+            margin: 0;
+        }
+
+        .pending-points {
+            font-weight: bold;
+            color: var(--gold-color);
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .stat-value {
+            color: var(--rebirth-color);
+            font-weight: bold;
         }
 
         .equipment-slot-display {
@@ -525,6 +545,10 @@
                 <div class="panel-body" id="point-investment-display">
                     <!-- Dynamic content here -->
                 </div>
+                <div class="panel-footer" id="investment-actions">
+                    <button id="confirm-invest-btn">Confirm</button>
+                    <button id="reset-invest-btn" class="button-secondary">Reset</button>
+                </div>
             </div>
             <div class="panel">
                 <div class="panel-header">Equipment</div>
@@ -602,11 +626,11 @@
                     <div id="tab-content-rebirth" class="tab-content">
                         <div class="rebirth-points" style="color: var(--rebirth-color); font-weight: bold; font-size: 1.5em; text-align: center; margin-bottom: 15px;">
                             Points: <span id="rebirth-points">0</span></div>
-                        <div class="rebirth-stat"><span>ATK Bonus: +<span id="rebirth-atk" class="rebirth-value">0</span></span><button id="invest-atk-btn">+</button></div>
-                        <div class="rebirth-stat"><span>DEF Bonus: +<span id="rebirth-def" class="rebirth-value">0</span></span><button id="invest-def-btn">+</button></div>
-                        <div class="rebirth-stat"><span>HP Bonus: +<span id="rebirth-hp" class="rebirth-value">0</span></span><button id="invest-hp-btn">+</button></div>
-                        <div class="rebirth-stat"><span>Gold Bonus: +<span id="rebirth-gold" class="rebirth-value">0</span>%</span><button id="invest-gold-btn">+</button></div>
-                        <div class="rebirth-stat"><span>XP Bonus: +<span id="rebirth-xp" class="rebirth-value">0</span>%</span><button id="invest-xp-btn">+</button>
+                        <div class="rebirth-stat"><span>ATK Bonus: +<span id="rebirth-atk" class="rebirth-value">0</span></span><button data-rebirth="atk">+</button></div>
+                        <div class="rebirth-stat"><span>DEF Bonus: +<span id="rebirth-def" class="rebirth-value">0</span></span><button data-rebirth="def">+</button></div>
+                        <div class="rebirth-stat"><span>HP Bonus: +<span id="rebirth-hp" class="rebirth-value">0</span></span><button data-rebirth="hp">+</button></div>
+                        <div class="rebirth-stat"><span>Gold Bonus: +<span id="rebirth-gold" class="rebirth-value">0</span>%</span><button data-rebirth="gold">+</button></div>
+                        <div class="rebirth-stat"><span>XP Bonus: +<span id="rebirth-xp" class="rebirth-value">0</span>%</span><button data-rebirth="xp">+</button>
                         </div>
                     </div>
                 </div>
@@ -654,7 +678,7 @@
                 let gameInterval;
                 let autoSaveInterval;
                 let tooltipHideTimer;
-                const SAVE_KEY = 'idleRpgSaveData_v3'; // Changed key for new structure
+                const SAVE_KEY = 'idleRpgSaveData_v4'; // Changed key for new structure
 
                 const STAT_NAMES = {
                     str: 'STR', con: 'CON', def: 'DEF', dex: 'DEX',
@@ -669,7 +693,9 @@
                         equipment: { weapon: null, body: null, legs: null },
                         maxInventorySize: 20,
                         rebirth: { points: 0, bonuses: { atk: 0, def: 0, hp: 0, gold: 0, xp: 0 } },
-                        playerTemp: {} // This holds transient data that should not be saved/loaded directly
+                        playerTemp: {
+                            pointAllocation: { str: 0, con: 0, def: 0, dex: 0, agl: 0, int: 0, critChance: 0, critDmg: 0 }
+                        }
                     };
                 }
 
@@ -789,6 +815,8 @@
                     globalTooltip: document.getElementById('global-tooltip'),
                     skillPanel: document.getElementById('skill-panel'), skillDisplay: document.getElementById('skill-display'),
                     pointInvestmentDisplay: document.getElementById('point-investment-display'),
+                    confirmInvestBtn: document.getElementById('confirm-invest-btn'),
+                    resetInvestBtn: document.getElementById('reset-invest-btn'),
                     buyPotion25: document.getElementById('buy-potion-25'), buyPotion50: document.getElementById('buy-potion-50'),
                     buyPotion75: document.getElementById('buy-potion-75'), buyPotion100: document.getElementById('buy-potion-100'),
                 };
@@ -808,7 +836,8 @@
                 function autoSaveToLocalStorage() {
                     if (!gameState.player || !gameState.isRunning) return;
                     try {
-                        const stateToSave = { ...gameState, playerTemp: {} };
+                        const stateToSave = { ...gameState };
+                        delete stateToSave.playerTemp; // Don't save transient data
                         const gameStateString = JSON.stringify(stateToSave);
                         localStorage.setItem(SAVE_KEY, gameStateString);
                     } catch (e) {
@@ -824,8 +853,7 @@
                             const loadedState = JSON.parse(savedState);
                             if (!loadedState.player || !loadedState.player.baseStats) throw new Error("Invalid save.");
                             gameState = deepMerge(getDefaultGameState(), loadedState);
-                            gameState.playerTemp = {};
-                            if (gameState.currentMonster) gameState.currentMonster.debuffs = {};
+                            resetTransientData();
                             logAction("Game loaded automatically.", 'log-system');
                             return true;
                         }
@@ -840,7 +868,8 @@
                 function manualSave() {
                     if (!gameState.player) return;
                     try {
-                        const stateToSave = { ...gameState, playerTemp: {} };
+                        const stateToSave = { ...gameState };
+                        delete stateToSave.playerTemp;
                         const encodedSave = btoa(JSON.stringify(stateToSave));
                         UIElements.manualSaveTextarea.value = encodedSave;
                         UIElements.manualSaveModal.style.display = 'flex';
@@ -860,8 +889,7 @@
                         if (!loadedState.player || !loadedState.player.baseStats) throw new Error("Invalid save.");
                         clearInterval(gameInterval); clearInterval(autoSaveInterval);
                         gameState = deepMerge(getDefaultGameState(), loadedState);
-                        gameState.playerTemp = {};
-                        if (gameState.currentMonster) gameState.currentMonster.debuffs = {};
+                        resetTransientData();
                         logAction("Game imported successfully.", 'log-system');
                         UIElements.classSelectionModal.style.display = 'none';
                         startGame();
@@ -893,6 +921,7 @@
                         investedStats: { str: 0, con: 0, def: 0, dex: 0, agl: 0, int: 0, critChance: 0, critDmg: 0 },
                         currentHp: classInfo.base.hp, activeSkills: [],
                     };
+                    resetTransientData();
                     UIElements.classSelectionModal.style.display = 'none';
                     logAction(`You have chosen the path of the ${className}.`, 'log-system');
                     startGame();
@@ -903,9 +932,14 @@
                     const p = gameState.player;
                     const totals = {};
 
-                    // Sum up all stat sources
+                    // Sum up base and invested points
                     for (const stat in p.baseStats) {
-                        totals[stat] = (p.baseStats[stat] || 0) + (p.investedStats[stat] || 0);
+                        totals[stat] = (p.baseStats[stat] || 0);
+                        if (p.investedStats[stat]) {
+                            if (stat === 'critChance') totals[stat] += p.investedStats[stat] * 0.002;
+                            else if (stat === 'critDmg') totals[stat] += p.investedStats[stat] * 0.005; // 0.5% per point
+                            else totals[stat] += p.investedStats[stat];
+                        }
                     }
 
                     // Add equipment stats
@@ -923,8 +957,8 @@
                     totals.atk = totals[primaryStat] + (gameState.rebirth.bonuses.atk || 0);
                     totals.def += (gameState.rebirth.bonuses.def || 0);
                     totals.hp = 50 + (totals.con * 5) + (gameState.rebirth.bonuses.hp || 0);
-                    totals.accuracy = totals.dex * 0.002; // 0.2% per point
-                    totals.evasion = totals.agl * 0.001; // 0.1% per point
+                    totals.accuracy = totals.dex * 0.002;
+                    totals.evasion = totals.agl * 0.001;
 
                     // Skill-based modifications
                     if (p.activeSkills.includes('Frenzy')) {
@@ -1170,7 +1204,7 @@
                     if (!gameState.player) return;
                     const totalStats = getPlayerTotalStats();
                     UIElements.playerName.textContent = gameState.player.name; UIElements.playerClass.textContent = gameState.player.className;
-                    UIElements.playerLevel.textContent = gameState.player.level; UIElements.playerStatPoints.textContent = gameState.player.statPoints;
+                    UIElements.playerLevel.textContent = gameState.player.level;
                     UIElements.playerHpText.textContent = `${Math.ceil(gameState.player.currentHp)} / ${Math.round(totalStats.hp)}`;
                     UIElements.playerHpFill.style.width = `${(gameState.player.currentHp / totalStats.hp) * 100}%`;
                     UIElements.playerXpText.textContent = `${gameState.player.xp} / ${gameState.player.xpToNextLevel}`;
@@ -1189,11 +1223,11 @@
                     }
                     UIElements.waveCounter.textContent = gameState.wave; UIElements.killCounter.textContent = gameState.kills;
                     UIElements.rebirthPoints.textContent = gameState.rebirth.points; UIElements.rebirthAtk.textContent = gameState.rebirth.bonuses.atk;
-                    UIElements.rebirthDef.textContent = gameState.rebirth.bonuses.def; UIElements.rebirthHp.textContent = gameState.rebirth.bonuses.hp;
+                    UIElements.rebirthDef.textContent = gameState.rebirth.bonuses.def;
+                    UIElements.rebirthHp.textContent = gameState.rebirth.bonuses.hp;
                     UIElements.rebirthGold.textContent = gameState.rebirth.bonuses.gold;
                     UIElements.rebirthXp.textContent = gameState.rebirth.bonuses.xp;
 
-                    // Update potion buttons
                     for (const key of [25, 50, 75, 100]) {
                         const cost = gameState.potionCosts[`p${key}`];
                         const btn = UIElements[`buyPotion${key}`];
@@ -1207,40 +1241,97 @@
                     display.innerHTML = '';
                     if (!gameState.player) return;
 
-                    for (const stat in gameState.player.investedStats) {
+                    const p = gameState.player;
+                    const allocation = gameState.playerTemp.pointAllocation;
+                    const totalPending = Object.values(allocation).reduce((a, b) => a + b, 0);
+                    const pointsAvailable = p.statPoints - totalPending;
+
+                    UIElements.playerStatPoints.textContent = `${p.statPoints} (${pointsAvailable} avail)`;
+
+                    for (const stat in p.investedStats) {
                         const statDiv = document.createElement('div');
                         statDiv.className = 'point-investment-stat';
-                        const totalStatValue = (gameState.player.baseStats[stat] || 0) + (gameState.player.investedStats[stat] || 0);
 
-                        let displayValue;
+                        const currentVal = (p.baseStats[stat] || 0) +
+                            (stat === 'critChance' ? p.investedStats[stat] * 0.002 :
+                                stat === 'critDmg' ? p.investedStats[stat] * 0.005 :
+                                p.investedStats[stat]);
+
+                        const pendingPoints = allocation[stat];
+                        const pendingValue = (stat === 'critChance' ? pendingPoints * 0.002 :
+                            stat === 'critDmg' ? pendingPoints * 0.005 :
+                            pendingPoints);
+
+                        const futureVal = currentVal + pendingValue;
+
+                        let displayCurrent, displayFuture;
                         if (['critChance', 'critDmg'].includes(stat)) {
-                            displayValue = `${(totalStatValue * 100).toFixed(1)}%`;
+                            displayCurrent = `${(currentVal * 100).toFixed(1)}%`;
+                            displayFuture = `${(futureVal * 100).toFixed(1)}%`;
                         } else {
-                            displayValue = Math.round(totalStatValue);
+                            displayCurrent = Math.round(currentVal);
+                            displayFuture = Math.round(futureVal);
                         }
 
                         statDiv.innerHTML = `
-                            <span>${STAT_NAMES[stat]}: <span class="stat-value">${displayValue}</span></span>
-                            <button data-stat="${stat}">+</button>
+                            <span class="stat-label">${STAT_NAMES[stat]}: <span class="stat-value">${displayCurrent}</span>
+                                ${pendingPoints > 0 ? ` -> ${displayFuture}` : ''}
+                            </span>
+                            <div class="investment-controls">
+                                <button class="btn-minus" data-stat="${stat}">-</button>
+                                <span class="pending-points">${pendingPoints}</span>
+                                <button class="btn-plus" data-stat="${stat}">+</button>
+                            </div>
                         `;
-                        const btn = statDiv.querySelector('button');
-                        btn.disabled = gameState.player.statPoints <= 0;
-                        btn.onclick = () => investStatPoint(stat);
+                        const plusBtn = statDiv.querySelector('.btn-plus');
+                        const minusBtn = statDiv.querySelector('.btn-minus');
+                        plusBtn.disabled = pointsAvailable <= 0;
+                        minusBtn.disabled = pendingPoints <= 0;
+
+                        plusBtn.onclick = () => handlePointAllocation(stat, 1);
+                        minusBtn.onclick = () => handlePointAllocation(stat, -1);
+
                         display.appendChild(statDiv);
+                    }
+                    UIElements.confirmInvestBtn.disabled = totalPending <= 0;
+                    UIElements.resetInvestBtn.disabled = totalPending <= 0;
+                }
+
+                function handlePointAllocation(stat, amount) {
+                    if (!gameState.player) return;
+                    const allocation = gameState.playerTemp.pointAllocation;
+                    const totalPending = Object.values(allocation).reduce((a, b) => a + b, 0);
+
+                    if (amount > 0 && gameState.player.statPoints - totalPending > 0) {
+                        allocation[stat]++;
+                    } else if (amount < 0 && allocation[stat] > 0) {
+                        allocation[stat]--;
+                    }
+                    updateAllUIs();
+                }
+
+                function confirmPointInvestment() {
+                    if (!gameState.player) return;
+                    const allocation = gameState.playerTemp.pointAllocation;
+                    const totalToSpend = Object.values(allocation).reduce((a, b) => a + b, 0);
+
+                    if (totalToSpend > 0 && gameState.player.statPoints >= totalToSpend) {
+                        for (const stat in allocation) {
+                            gameState.player.investedStats[stat] += allocation[stat];
+                        }
+                        gameState.player.statPoints -= totalToSpend;
+                        logAction(`Invested ${totalToSpend} points.`, 'log-system');
+                        resetPointInvestment(); // Also updates UI
                     }
                 }
 
-                function investStatPoint(stat) {
-                    if (gameState.player && gameState.player.statPoints > 0) {
-                        gameState.player.statPoints--;
-                        if (['critChance', 'critDmg'].includes(stat)) {
-                            gameState.player.investedStats[stat] += (stat === 'critChance' ? 0.002 : 0.01); // 0.2% / 1%
-                        } else {
-                            gameState.player.investedStats[stat]++;
-                        }
-                        updateAllUIs();
+                function resetPointInvestment() {
+                    for (const stat in gameState.playerTemp.pointAllocation) {
+                        gameState.playerTemp.pointAllocation[stat] = 0;
                     }
+                    updateAllUIs();
                 }
+
 
                 function updateInventoryUI() {
                     const list = UIElements.inventoryList;
@@ -1265,7 +1356,6 @@
                         list.appendChild(itemDiv);
                     });
 
-                    // Add event listeners after creating all elements
                     list.querySelectorAll('.inventory-item-info').forEach(el => {
                         el.onmouseover = (e) => {
                             const item = gameState.inventory.find(i => i.id == e.currentTarget.dataset.itemId);
@@ -1318,7 +1408,7 @@
                         const bonusVal = item.bonusStats?.[stat] || 0;
                         const totalVal = baseVal + bonusVal;
                         if (totalVal > 0) {
-                            const displayVal = (['critChance', 'critDmg'].includes(stat)) ? `+${(totalVal * 100).toFixed(1)}%` : `+${totalVal}`;
+                            const displayVal = (['critChance', 'critDmg'].includes(stat)) ? `+${(totalVal * 100).toFixed(1)}%` : `+${Math.round(totalVal)}`;
                             content += `${STAT_NAMES[stat]}: ${displayVal}<br>`;
                         }
                     }
@@ -1384,6 +1474,13 @@
 
                 function updateAllUIs() { updateUI(); updateInventoryUI(); updateEquipmentUI(); updatePointInvestmentUI(); }
 
+                function resetTransientData() {
+                    gameState.playerTemp = {
+                        pointAllocation: { str: 0, con: 0, def: 0, dex: 0, agl: 0, int: 0, critChance: 0, critDmg: 0 }
+                    };
+                    if (gameState.currentMonster) gameState.currentMonster.debuffs = {};
+                }
+
                 function handleNewGame() {
                     clearInterval(gameInterval); clearInterval(autoSaveInterval);
                     localStorage.removeItem(SAVE_KEY);
@@ -1414,7 +1511,7 @@
                     }
                 }
 
-                function investPoint(stat) {
+                function investRebirthPoint(stat) {
                     if (gameState.rebirth.points > 0) {
                         gameState.rebirth.points--;
                         if (['gold', 'xp'].includes(stat)) gameState.rebirth.bonuses[stat] += 1;
@@ -1502,15 +1599,15 @@
                 UIElements.buyPotion50.onclick = () => buyPotion(50);
                 UIElements.buyPotion75.onclick = () => buyPotion(75);
                 UIElements.buyPotion100.onclick = () => buyPotion(100);
-                document.getElementById('invest-atk-btn').onclick = () => investPoint('atk');
-                document.getElementById('invest-def-btn').onclick = () => investPoint('def');
-                document.getElementById('invest-hp-btn').onclick = () => investPoint('hp');
-                document.getElementById('invest-gold-btn').onclick = () => investPoint('gold');
-                document.getElementById('invest-xp-btn').onclick = () => investPoint('xp');
+                document.querySelectorAll('#tab-content-rebirth .rebirth-stat button').forEach(btn => {
+                    btn.onclick = () => investRebirthPoint(btn.dataset.rebirth);
+                });
                 UIElements.sellNBtn.onclick = () => sellItemsByRarity('N');
                 UIElements.sellRBtn.onclick = () => sellItemsByRarity('R');
                 UIElements.globalTooltip.onmouseover = () => clearTimeout(tooltipHideTimer);
                 UIElements.globalTooltip.onmouseout = hideTooltip;
+                UIElements.confirmInvestBtn.onclick = confirmPointInvestment;
+                UIElements.resetInvestBtn.onclick = resetPointInvestment;
 
                 initializeGame();
             });
