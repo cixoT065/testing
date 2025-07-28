@@ -759,6 +759,34 @@
                 // ... (rest of UI updates remain unchanged)
             }
 
+            function saveToLocalStorage() {
+              try {
+                const saveData = JSON.stringify(gameState);
+                localStorage.setItem('idleRpgSaveData_v2', saveData);
+                logAction('Game saved.', 'log-system');
+              } catch (e) {
+                console.error('Failed to save game:', e);
+              }
+            }
+            
+            function loadFromLocalStorage() {
+              try {
+                const saveData = localStorage.getItem('idleRpgSaveData_v2');
+                if (!saveData) return false;
+                const loadedState = JSON.parse(saveData);
+                if (loadedState && loadedState.player) {
+                  gameState = loadedState;
+                  updateUI();
+                  logAction('Game loaded from save.', 'log-system');
+                  return true;
+                }
+                return false;
+              } catch (e) {
+                console.error('Failed to load game:', e);
+                return false;
+              }
+            }
+
             // Invest Points Modal Logic
             const investPointsModal = document.getElementById('invest-points-modal');
             const unspentPointsSpan = document.getElementById('unspent-points');
