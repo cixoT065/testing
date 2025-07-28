@@ -1630,7 +1630,6 @@
                         }
                     }
                     
-                    // --- Comparison Logic ---
                     if (!isEquipped && gameState.equipment[item.type]) {
                         const currentStats = getPlayerTotalStats();
                         const futureStats = getPlayerTotalStats(item);
@@ -1639,23 +1638,31 @@
 
                         for (const stat in DISPLAY_STATS) {
                             const diff = futureStats[stat] - currentStats[stat];
-                            if (Math.abs(diff) > 0.0001) { // Check for non-zero difference
-                                hasComparison = true;
-                                const isPercent = ['accuracy', 'evasion', 'critChance', 'critDmg'].includes(stat);
-                                let diffDisplay;
-                                
-                                if (isPercent) {
-                                    diffDisplay = `${(diff * 100).toFixed(1)}%`;
-                                } else {
-                                    diffDisplay = Math.round(diff);
-                                }
+                            if (Math.abs(diff) < 0.0001) continue;
+                            
+                            hasComparison = true;
+                            const isPercent = ['accuracy', 'evasion', 'critChance', 'critDmg'].includes(stat);
+                            let itemContribution = 0;
+                            const primaryStat = classes[gameState.player.baseClassName].primaryStat;
 
-                                if (diff > 0) {
-                                    comparisonContent += `${DISPLAY_STATS[stat]}: <span class="stat-increase">+${diffDisplay} ▲</span><br>`;
-                                } else {
-                                    comparisonContent += `${DISPLAY_STATS[stat]}: <span class="stat-decrease">${diffDisplay} ▼</span><br>`;
-                                }
+                            switch(stat) {
+                                case 'atk': itemContribution = (item[primaryStat] || 0) + (item.bonusStats[primaryStat] || 0); break;
+                                case 'def': itemContribution = (item.def || 0) + (item.bonusStats.def || 0); break;
+                                case 'hp': itemContribution = ((item.con || 0) + (item.bonusStats.con || 0)) * 5; break;
+                                case 'accuracy': itemContribution = ((item.dex || 0) + (item.bonusStats.dex || 0)) * 0.002; break;
+                                case 'evasion': itemContribution = ((item.agl || 0) + (item.bonusStats.agl || 0)) * 0.001; break;
+                                case 'critChance': itemContribution = (item.critChance || 0) + (item.bonusStats.critChance || 0); break;
+                                case 'critDmg': itemContribution = (item.critDmg || 0) + (item.bonusStats.critDmg || 0); break;
                             }
+                            
+                            const itemValueDisplay = isPercent ? `${(itemContribution * 100).toFixed(1)}%` : `${Math.round(itemContribution)}`;
+                            let diffDisplay = isPercent ? `${(diff * 100).toFixed(1)}%` : `${Math.round(diff)}`;
+                            if (diff > 0) diffDisplay = `+${diffDisplay}`;
+
+                            const symbol = diff > 0 ? '▲' : '▼';
+                            const className = diff > 0 ? 'stat-increase' : 'stat-decrease';
+                            
+                            comparisonContent += `${DISPLAY_STATS[stat]}: ${itemValueDisplay} <span class="${className}">${symbol}${diffDisplay}</span><br>`;
                         }
                         if (hasComparison) content += comparisonContent;
                     }
