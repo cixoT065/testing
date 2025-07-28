@@ -30,6 +30,8 @@
             --stat-int: #a37dc9;
             --set-bonus-active: #63C270;
             --selection-color: #61afef;
+            --stat-increase-color: #98c379;
+            --stat-decrease-color: #e06c75;
         }
 
         body {
@@ -182,6 +184,9 @@
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
             pointer-events: auto;
         }
+        
+        .stat-increase { color: var(--stat-increase-color); }
+        .stat-decrease { color: var(--stat-decrease-color); }
 
         button,
         .button {
@@ -692,11 +697,15 @@
                 let gameInterval;
                 let autoSaveInterval;
                 let tooltipHideTimer;
-                const SAVE_KEY = 'idleRpgSaveData_v10_mobileFix'; // Changed key for new structure
+                const SAVE_KEY = 'idleRpgSaveData_v11_comparison'; // Changed key for new structure
 
                 const STAT_NAMES = {
                     str: 'STR', con: 'CON', def: 'DEF', dex: 'DEX',
                     agl: 'AGL', int: 'INT', critChance: 'Crit Chance', critDmg: 'Crit DMG'
+                };
+                
+                const DISPLAY_STATS = {
+                    atk: 'ATK', def: 'DEF', hp: 'HP', accuracy: 'Accuracy', evasion: 'Evasion', critChance: 'Crit Chance', critDmg: 'Crit DMG'
                 };
 
                 function getDefaultGameState() {
@@ -1008,12 +1017,11 @@
                     startGame();
                 }
 
-                function getPlayerTotalStats() {
+                function getPlayerTotalStats(hypotheticalItem = null) {
                     if (!gameState.player) return {};
                     const p = gameState.player;
                     const totals = {};
 
-                    // Sum up base and invested points
                     for (const stat in p.baseStats) {
                         totals[stat] = (p.baseStats[stat] || 0);
                         if (p.investedStats[stat]) {
@@ -1024,9 +1032,19 @@
                     }
 
                     const equippedSets = {};
-                    // Add equipment stats
-                    for (const type in gameState.equipment) {
-                        const item = gameState.inventory.find(i => i.id === gameState.equipment[type]);
+                    const effectiveEquipment = { ...gameState.equipment };
+                    if (hypotheticalItem) {
+                        effectiveEquipment[hypotheticalItem.type] = hypotheticalItem.id;
+                    }
+
+                    for (const type in effectiveEquipment) {
+                        let item;
+                        if (hypotheticalItem && hypotheticalItem.id === effectiveEquipment[type]) {
+                            item = hypotheticalItem;
+                        } else {
+                            item = gameState.inventory.find(i => i.id === effectiveEquipment[type]);
+                        }
+
                         if (item) {
                             if (item.setName) {
                                 equippedSets[item.setName] = (equippedSets[item.setName] || 0) + 1;
@@ -1042,15 +1060,13 @@
                         }
                     }
 
-                    // Calculate derived stats first
                     const primaryStat = classes[p.baseClassName].primaryStat;
-                    totals.atk = totals[primaryStat] + (gameState.rebirth.bonuses.atk || 0);
-                    totals.def += (gameState.rebirth.bonuses.def || 0);
+                    totals.atk = (totals[primaryStat] || 0) + (gameState.rebirth.bonuses.atk || 0);
+                    totals.def = (totals.def || 0) + (gameState.rebirth.bonuses.def || 0);
                     totals.hp = 50 + (totals.con * 5) + (gameState.rebirth.bonuses.hp || 0);
-                    totals.accuracy = totals.dex * 0.002;
-                    totals.evasion = totals.agl * 0.001;
+                    totals.accuracy = (totals.dex || 0) * 0.002;
+                    totals.evasion = (totals.agl || 0) * 0.001;
 
-                    // Apply set bonuses
                     let hpPercentBonus = 0;
                     for (const setName in equippedSets) {
                         const setInfo = itemSets[setName];
@@ -1072,18 +1088,16 @@
                         totals.hp *= (1 + hpPercentBonus);
                     }
 
-
-                    // Skill-based modifications
-                    if (p.activeSkills.includes('Frenzy')) {
+                    if (p.activeSkills.includes('Frenzy') && !hypotheticalItem) {
                         const missingHpPercent = 1 - (p.currentHp / totals.hp);
                         const frenzyBonus = Math.floor(missingHpPercent / 0.1) * 0.08;
                         totals.atk *= (1 + frenzyBonus);
                     }
-                    if (gameState.playerTemp.standFirm > 0) {
+                    if (gameState.playerTemp.standFirm > 0 && !hypotheticalItem) {
                         totals.def *= 1.30;
                     }
 
-                    if (p.currentHp > totals.hp) p.currentHp = totals.hp;
+                    if (p.currentHp > totals.hp && !hypotheticalItem) p.currentHp = totals.hp;
                     return totals;
                 }
 
@@ -1092,7 +1106,6 @@
 
                     if (gameState.currentMonster.hp <= 0) { monsterDefeated(); return; }
 
-                    // Player's turn
                     const playerStats = getPlayerTotalStats();
                     let playerDamage = calculateDamage(playerStats, gameState.currentMonster, true);
                     gameState.currentMonster.hp -= playerDamage.damage;
@@ -1100,7 +1113,6 @@
 
                     if (gameState.currentMonster.hp <= 0) { monsterDefeated(); return; }
 
-                    // Monster's turn
                     let monsterDamage = calculateDamage(gameState.currentMonster, playerStats, false);
                     gameState.player.currentHp -= monsterDamage.damage;
                     logAction(`${gameState.currentMonster.name} hits you for ${monsterDamage.damage} damage.`, 'log-monster');
@@ -1591,7 +1603,6 @@
                     let content = `<strong style="color: ${itemData.rarities[item.rarity].color}; font-weight: bold;">${item.name} (${item.type})</strong><br>`;
                     content += `Rarity: <span style="color: ${itemData.rarities[item.rarity].color}; font-weight: bold;">${item.rarity}</span> | Class: <span style="color:${classColor};">${item.classReq}</span><br>----<br>`;
 
-                    // Display Base Stats
                     let hasBaseStats = false;
                     for (const stat in item) {
                         if (STAT_NAMES[stat] && typeof item[stat] === 'number') {
@@ -1601,7 +1612,6 @@
                         }
                     }
 
-                    // Display Bonus Stats
                     if (Object.keys(item.bonusStats).length > 0) {
                         if (hasBaseStats) content += `---- (Bonus) ----<br>`;
                         for (const stat in item.bonusStats) {
@@ -1610,7 +1620,6 @@
                         }
                     }
 
-                    // Display Set Info
                     if (item.setName) {
                         content += `----<br><strong>${item.setName}</strong><br>`;
                         const setInfo = itemSets[item.setName];
@@ -1619,6 +1628,36 @@
                             const bonusIsActive = equippedCount >= count;
                             content += `<span style="color: ${bonusIsActive ? 'var(--set-bonus-active)' : 'var(--disabled-text-color)'};">${setInfo.bonuses[count].description}</span><br>`;
                         }
+                    }
+                    
+                    // --- Comparison Logic ---
+                    if (!isEquipped && gameState.equipment[item.type]) {
+                        const currentStats = getPlayerTotalStats();
+                        const futureStats = getPlayerTotalStats(item);
+                        let comparisonContent = '----<br><strong>Comparison:</strong><br>';
+                        let hasComparison = false;
+
+                        for (const stat in DISPLAY_STATS) {
+                            const diff = futureStats[stat] - currentStats[stat];
+                            if (Math.abs(diff) > 0.0001) { // Check for non-zero difference
+                                hasComparison = true;
+                                const isPercent = ['accuracy', 'evasion', 'critChance', 'critDmg'].includes(stat);
+                                let diffDisplay;
+                                
+                                if (isPercent) {
+                                    diffDisplay = `${(diff * 100).toFixed(1)}%`;
+                                } else {
+                                    diffDisplay = Math.round(diff);
+                                }
+
+                                if (diff > 0) {
+                                    comparisonContent += `${DISPLAY_STATS[stat]}: <span class="stat-increase">+${diffDisplay} ▲</span><br>`;
+                                } else {
+                                    comparisonContent += `${DISPLAY_STATS[stat]}: <span class="stat-decrease">${diffDisplay} ▼</span><br>`;
+                                }
+                            }
+                        }
+                        if (hasComparison) content += comparisonContent;
                     }
 
 
