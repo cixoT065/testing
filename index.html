@@ -1193,10 +1193,6 @@
                         logAction("You have already defeated the final boss.", 'log-system', "event");
                         return;
                     }
-                    if (gameState.player.currentHp <= 0) {
-                        logAction("You must be at full health to challenge the final boss!", 'log-error', "event");
-                        return;
-                    }
 
                     logAction(`You challenge the mighty ${gameState.finalBoss.name}!`, 'log-system', "event");
                     clearInterval(gameInterval);
