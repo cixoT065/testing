@@ -1500,6 +1500,7 @@
                     if (gameState.currentMonster.hp <= 0) { monsterDefeated(); return; }
 
                     const playerStats = getPlayerTotalStats();
+                    const p = gameState.player;
                     let playerDamage = calculateDamage(playerStats, gameState.currentMonster, true);
                     gameState.currentMonster.hp -= playerDamage.damage;
                     logAction(`You hit ${gameState.currentMonster.name} for ${playerDamage.damage} damage.${playerDamage.isCrit ? ' (CRIT!)' : ''}`, 'log-player', 'battle');
@@ -1516,22 +1517,21 @@
                         gameState.playerTemp.guaranteedEvasion = false;
                     } else {
                         let monsterDamage = calculateDamage(gameState.currentMonster, playerStats, false);
-                        
                         let wasBlocked = false;
-                        if(player.activeSkills.includes('Aegis Block') && Math.random() < 0.15) {
+                        if(p.activeSkills.includes('Aegis Block') && Math.random() < 0.15) {
                             wasBlocked = true;
-                            if(player.activeSkills.includes('Holy Shield')) {
+                            if(p.activeSkills.includes('Holy Shield')) {
                                 const healAmount = Math.round(playerStats.hp * 0.05);
-                                player.currentHp = Math.min(playerStats.hp, player.currentHp + healAmount);
+                                p.currentHp = Math.min(playerStats.hp, p.currentHp + healAmount);
                                 logAction(`You blocked the attack with your Holy Shield, healing for ${healAmount} HP!`, 'log-skill', 'battle');
                             } else {
                                 logAction(`You blocked the attack with Aegis Block!`, 'log-skill', 'battle');
                             }
-                            if(player.activeSkills.includes('Stand Firm')) {
+                            if(p.activeSkills.includes('Stand Firm')) {
                                 gameState.playerTemp.standFirmTurns = 3;
                                 logAction(`You Stand Firm, bolstering your defense!`, 'log-skill', 'battle');
                             }
-                            if(player.activeSkills.includes('Divine Retribution')) {
+                            if(p.activeSkills.includes('Divine Retribution')) {
                                 const retaliateDmg = Math.round(playerStats.def);
                                 gameState.currentMonster.hp -= retaliateDmg;
                                 logAction(`Your shield erupts with holy light, dealing ${retaliateDmg} damage!`, 'log-skill', 'battle');
@@ -1539,7 +1539,7 @@
                             monsterDamage.damage = 0;
                         }
 
-                        if (player.activeSkills.includes('Thornmail') && gameState.playerTemp.standFirmTurns > 0 && !wasBlocked) {
+                        if (p.activeSkills.includes('Thornmail') && gameState.playerTemp.standFirmTurns > 0 && !wasBlocked) {
                             const reflectDmg = Math.round(monsterDamage.preMitigationDamage * 0.20);
                             gameState.currentMonster.hp -= reflectDmg;
                             logAction(`Your Thornmail reflects ${reflectDmg} damage!`, 'log-skill', 'battle');
