@@ -2122,7 +2122,7 @@
 
                 function updateFinalBossButton() {
                     const btn = UIElements.challengeFinalBossBtn;
-                    if (gameState.maxWaveReached >= 20 && !gameState.finalBossDefeated) {
+                    if (gameState.maxWaveReached >= 2 && !gameState.finalBossDefeated) {
                         btn.style.display = 'block';
                         const boss = gameState.finalBoss;
                         if (boss) {
