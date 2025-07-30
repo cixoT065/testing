@@ -91,8 +91,9 @@
             gap: 10px;
         }
 
+        /* MODIFICATION: Removed margin-top: auto. The flex-grow on panels above will now handle positioning. */
         #system-panel {
-            margin-top: auto;
+            /* margin-top: auto; */
         }
 
         .panel-header {
@@ -108,6 +109,23 @@
         .panel-body {
             padding: 15px;
         }
+
+        /* MODIFICATION: Added rules to make specific sidebar panels grow to fill vertical space */
+        #invest-points-panel,
+        #equipment-panel,
+        #skill-panel {
+            flex-grow: 1;
+            min-height: 0; /* Crucial for proper flexbox sizing and scrolling */
+        }
+
+        /* MODIFICATION: Make the body of the growing panels also grow and become scrollable */
+        #invest-points-panel .panel-body,
+        #equipment-panel .panel-body,
+        #skill-panel .panel-body {
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+
 
         .stat-bar {
             background-color: #0a0a0a;
@@ -640,7 +658,8 @@
                     <div>Crit DMG: <span id="player-crit-dmg">150%</span></div>
                 </div>
             </div>
-            <div class="panel">
+            <!-- MODIFICATION: Added ID for CSS targeting -->
+            <div class="panel" id="invest-points-panel">
                 <div class="panel-header">Invest Points</div>
                 <div class="panel-body" id="point-investment-display">
                     <!-- Dynamic content here -->
@@ -650,7 +669,8 @@
                     <button id="reset-invest-btn" class="button-secondary">Reset</button>
                 </div>
             </div>
-            <div class="panel">
+            <!-- MODIFICATION: Added ID for CSS targeting -->
+            <div class="panel" id="equipment-panel">
                 <div class="panel-header">Equipment</div>
                 <div class="panel-body" id="equipment-display"></div>
             </div>
