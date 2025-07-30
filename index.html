@@ -1184,7 +1184,13 @@
                         maxHp: Math.round(base.hp * effectiveReduction),
                         atk: Math.round(base.atk * effectiveReduction),
                         def: Math.round(base.def * effectiveReduction),
-                        evasion: 0.15, accuracy: 0.10, critChance: 0.15, critDmg: 2.0,
+                        evasion: 0.15,
+                        accuracy: 0.10,
+                        critChance: 0.15,
+                        critDmg: 2.0,
+                        monsterType: 'boss',
+                        debuffs: {},
+                        missNextAttack: false
                     };
                 }
 
@@ -1193,16 +1199,24 @@
                         logAction("You have already defeated the final boss.", 'log-system', "event");
                         return;
                     }
+                    if (gameState.player.currentHp <= 0) {
+                        logAction("You must be at full health to challenge the final boss!", 'log-error', "event");
+                        return;
+                    }
 
                     logAction(`You challenge the mighty ${gameState.finalBoss.name}!`, 'log-system', "event");
                     clearInterval(gameInterval);
 
-                    const player = gameState.player;
-                    const boss = { ...gameState.finalBoss };
+                    gameState.currentMonster = { ...gameState.finalBoss }; 
                     const playerStats = getPlayerTotalStats();
-                    player.currentHp = playerStats.hp;
+                    gameState.player.currentHp = playerStats.hp; 
+                    
+                    updateAllUIs(); 
 
                     const fightInterval = setInterval(() => {
+                        const player = gameState.player;
+                        const boss = gameState.currentMonster;
+
                         if (player.currentHp <= 0 || boss.hp <= 0) {
                             clearInterval(fightInterval);
                             if (player.currentHp > 0) {
@@ -1219,13 +1233,18 @@
                             return;
                         }
 
-                        let playerDamage = calculateDamage(playerStats, boss, true);
+                        const currentStats = getPlayerTotalStats();
+                        let playerDamage = calculateDamage(currentStats, boss, true);
                         boss.hp -= playerDamage.damage;
                         logAction(`You hit ${boss.name} for ${playerDamage.damage} damage.${playerDamage.isCrit ? ' (CRIT!)' : ''}`, 'log-player', 'battle');
+                        handlePostPlayerAttackSkills(currentStats, playerDamage, 0);
 
-                        if (boss.hp <= 0) return;
+                        if (boss.hp <= 0) {
+                             updateUI();
+                             return;
+                        }
 
-                        let bossDamage = calculateDamage(boss, playerStats, false);
+                        let bossDamage = calculateDamage(boss, currentStats, false);
                         player.currentHp -= bossDamage.damage;
                         logAction(`${boss.name} hits you for ${bossDamage.damage} damage.`, 'log-monster');
                         
@@ -2103,7 +2122,7 @@
 
                 function updateFinalBossButton() {
                     const btn = UIElements.challengeFinalBossBtn;
-                    if (gameState.maxWaveReached >= 2 && !gameState.finalBossDefeated) {
+                    if (gameState.maxWaveReached >= 20 && !gameState.finalBossDefeated) {
                         btn.style.display = 'block';
                         const boss = gameState.finalBoss;
                         if (boss) {
