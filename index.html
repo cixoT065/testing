@@ -1094,7 +1094,7 @@
                 'Wizard': {
                     primaryStat: 'int',
                     description: 'A master of arcane arts, dealing massive damage with powerful spells. Fragile but deadly.',
-                    base: { hp: 80, str: 2, con: 4, def: 2, dex: 6, agl: 3, int: 12, critChance: 0.07, critDmg: 1.6 },
+                    base: { hp: 80, str: 8, con: 4, def: 2, dex: 6, agl: 3, int: 12, critChance: 0.07, critDmg: 1.6 },
                     growth: { str: 0, con: 1, def: 0.5, dex: 1, agl: 0.5, int: 3, critChance: 0.0007, critDmg: 0 },
                     promotions: { 20: ['Mage', 'Sorcerer'], 40: { 'Mage': ['Archmage', 'Elementalist'], 'Sorcerer': ['Warlock', 'Chronomancer'] }, 70: { 'Archmage': ['Grand Magus'], 'Elementalist': ['Avatar'], 'Warlock': ['Demonologist'], 'Chronomancer': ['Time Lord'] } }
                 },
@@ -1606,9 +1606,9 @@
 
                 // Universal bonus from INT (True Damage %)
                 trueDmgPerInt: {
-                    'Wizard': 0.70, // 0.2% True Damage per point of INT
-                    'Warrior': 0.15, // 0.08% True Damage per point of INT
-                    'Rogue': 0.10  // 0.08% True Damage per point of INT
+                    'Wizard': 0.078, // 0.2% True Damage per point of INT
+                    'Warrior': 0.015, // 0.08% True Damage per point of INT
+                    'Rogue': 0.010  // 0.08% True Damage per point of INT
                 }
             };
 
