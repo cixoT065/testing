@@ -1606,7 +1606,7 @@
 
                 // Universal bonus from INT (True Damage %)
                 trueDmgPerInt: {
-                    'Wizard': 0.078, // 0.2% True Damage per point of INT
+                    'Wizard': 0.08, // 0.2% True Damage per point of INT
                     'Warrior': 0.015, // 0.08% True Damage per point of INT
                     'Rogue': 0.010  // 0.08% True Damage per point of INT
                 }
@@ -1809,18 +1809,11 @@
                         logAction(`Your attack was evaded!`, 'log-system', 'battle');
                     } else {
                         logAction(`${attacker.name}'s attack was evaded!`, 'log-system', 'battle');
-                        if (defender.evasionGrantsAtk) {
-                            const bonus = defender.evasionGrantsAtk;
-                            if (gameState.playerTemp.evasionAtkBuffStacks < bonus.maxStacks) {
-                                gameState.playerTemp.evasionAtkBuffStacks++;
-                            }
-                            gameState.playerTemp.evasionAtkBuffDuration = bonus.duration;
-                            logAction(`Storm-Chaser set grants you a surge of power! (Stack: ${gameState.playerTemp.evasionAtkBuffStacks})`, 'log-skill', 'battle');
-                        }
                     }
                     return { damage: 0, isCrit: false, preMitigationDamage: 0 };
                 }
 
+                // Crit calculation remains the same...
                 let isCrit = false;
                 if (isPlayerAttacker) {
                     gameState.playerTemp.attacksSinceLastFocus++;
@@ -1850,14 +1843,10 @@
                     critMultiplier += 0.5;
                 }
 
-                let baseDamage = (attacker.atk || 0);
+                // Calculate base attack with crit
+                let calculatedAtk = (attacker.atk || 0) * critMultiplier;
 
-                let defenderDef = isPlayerAttacker ? (defender.def || 0) : (defender.def || 0);
-                if (isPlayerAttacker && monster && monster.debuffs['Sunder']) defenderDef *= (1 - (monster.debuffs['Sunder'].stacks * 0.1));
-                if (isPlayerAttacker && monster && monster.debuffs['Apocalypse']) defenderDef *= (1 - 0.15);
-                if (isPlayerAttacker && monster && monster.debuffs['LowerDef']) defenderDef *= (1 - monster.debuffs['LowerDef'].percent);
-                if (isPlayerAttacker && isCrit && attacker.critIgnoresDef) defenderDef *= (1 - attacker.critIgnoresDef);
-
+                // Apply any damage multipliers (execute, etc.)
                 let damageMultiplier = 1.0;
                 if (isPlayerAttacker && attacker.executeDmg && (monster.hp / monster.maxHp <= attacker.executeDmg.hpThreshold)) {
                     damageMultiplier += attacker.executeDmg.dmgBonus;
@@ -1868,32 +1857,52 @@
                     if (p.activeSkills.includes('Execute') && monster.hp / monster.maxHp <= executeThreshold) damageMultiplier += executeBonus;
                 }
 
-                // --- CHANGES START HERE ---
+                calculatedAtk *= damageMultiplier;
 
-                // This calculation now represents the "Normal Damage" component
-                const preMitigationDamage = baseDamage * critMultiplier;
-                const damageReduction = 1 - (defenderDef / (defenderDef + 100 + (baseDamage / 10)));
-                let finalDamage = Math.round(preMitigationDamage * damageReduction * damageMultiplier);
+                // --- NEW IMPLEMENTATION STARTS HERE ---
 
-                // NEW: Calculate and add the "True Damage" from INT
+                // Calculate true damage based on the calculated attack
+                let trueDamage = 0;
+                let normalAtk = calculatedAtk;
+
                 if (isPlayerAttacker && attacker.trueDmgBonus > 0) {
-                    // True damage is based on the raw base damage, ignoring crits and multipliers, to keep it consistent.
-                    const trueDamage = Math.round(baseDamage * attacker.trueDmgBonus);
-                    if (trueDamage > 0) {
-                        finalDamage += trueDamage;
-                        logAction(`Your INT grants <span style="color: #8888FF;">${trueDamage}</span> true damage, ignoring defense!`, 'log-skill', 'battle');
-                    }
+                    // True damage = calculated atk * true dmg rate
+                    trueDamage = Math.round(calculatedAtk * attacker.trueDmgBonus);
+                    // Normal attack = calculated atk - true dmg
+                    normalAtk = calculatedAtk - trueDamage;
                 }
 
-                // --- CHANGES END HERE ---
+                // Apply defense reduction only to normal attack
+                let defenderDef = isPlayerAttacker ? (defender.def || 0) : (defender.def || 0);
+                if (isPlayerAttacker && monster && monster.debuffs['Sunder']) defenderDef *= (1 - (monster.debuffs['Sunder'].stacks * 0.1));
+                if (isPlayerAttacker && monster && monster.debuffs['Apocalypse']) defenderDef *= (1 - 0.15);
+                if (isPlayerAttacker && monster && monster.debuffs['LowerDef']) defenderDef *= (1 - monster.debuffs['LowerDef'].percent);
+                if (isPlayerAttacker && isCrit && attacker.critIgnoresDef) defenderDef *= (1 - attacker.critIgnoresDef);
 
+                const damageReduction = 1 - (defenderDef / (defenderDef + 100 + (normalAtk / 10)));
+                let mitigatedNormalDamage = Math.round(normalAtk * damageReduction);
+
+                // Total damage = mitigated normal damage + true damage
+                let finalDamage = mitigatedNormalDamage + trueDamage;
+
+                if (trueDamage > 0) {
+                    logAction(`Attack splits into ${mitigatedNormalDamage} normal + <span style="color: #8888FF;">${trueDamage}</span> true damage!`, 'log-skill', 'battle');
+                }
+
+                // --- NEW IMPLEMENTATION ENDS HERE ---
+
+                // Add bonus damage from sets
                 if (isPlayerAttacker && attacker.bonusCurrentHpDamage) {
                     const bonusDmg = Math.round(defender.hp * attacker.bonusCurrentHpDamage);
                     finalDamage += bonusDmg;
                     logAction(`Dragon-Slayer set burns for ${bonusDmg} bonus damage!`, 'log-skill', 'battle');
                 }
 
-                return { damage: Math.max(1, finalDamage), isCrit: isCrit, preMitigationDamage: preMitigationDamage };
+                return {
+                    damage: Math.max(1, finalDamage),
+                    isCrit: isCrit,
+                    preMitigationDamage: calculatedAtk  // Store the calculated attack for other uses
+                };
             }
 
             function handlePostPlayerAttackSkills(playerStats, playerDamage, skillDamage) {
@@ -2439,8 +2448,8 @@
                     statDiv.className = 'point-investment-stat';
 
                     const currentVal = (p.baseStats[stat] || 0) +
-                        (stat === 'critChance' ? p.investedStats[stat] * 0.002 :
-                            stat === 'critDmg' ? p.investedStats[stat] * 0.005 :
+                        (stat === 'critChance' ? p.investedStats[stat] * 0.001 :
+                            stat === 'critDmg' ? p.investedStats[stat] * 0.004 :
                                 p.investedStats[stat]);
 
                     const pendingPoints = allocation[stat];
@@ -2778,7 +2787,7 @@
                     gameState.rebirth.points--;
                     // if (['gold', 'xp'].includes(stat)) gameState.rebirth.bonuses[stat] += 0.01;
                     // else 
-                    gameState.rebirth.bonuses[stat] += 0.01;
+                    gameState.rebirth.bonuses[stat] += 0.05;
                     updateAllUIs();
                 }
             }
