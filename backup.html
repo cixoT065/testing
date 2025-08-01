@@ -787,12 +787,13 @@
             <div class="panel" id="combat-stats-panel">
                 <div class="panel-header">Combat Stats</div>
                 <div class="panel-body stats-grid">
-                    <div>ATK (STR/INT): <span id="player-atk">10</span></div>
+                    <div>ATK (STR): <span id="player-atk">10</span></div>
                     <div>DEF (DEF): <span id="player-def">5</span></div>
                     <div>Accuracy (DEX): <span id="player-accuracy">5%</span></div>
                     <div>Evasion (AGL): <span id="player-evasion">5%</span></div>
                     <div>Crit Chance: <span id="player-crit-chance">5%</span></div>
                     <div>Crit DMG: <span id="player-crit-dmg">150%</span></div>
+                    <div>True DMG(INT): <span id="player-true-dmg">1%</span></div>
                 </div>
             </div>
             <div class="panel" id="invest-points-panel">
@@ -1093,7 +1094,7 @@
                 'Wizard': {
                     primaryStat: 'int',
                     description: 'A master of arcane arts, dealing massive damage with powerful spells. Fragile but deadly.',
-                    base: { hp: 80, str: 2, con: 4, def: 2, dex: 6, agl: 3, int: 12, critChance: 0.07, critDmg: 1.6 },
+                    base: { hp: 80, str: 8, con: 4, def: 2, dex: 6, agl: 3, int: 12, critChance: 0.07, critDmg: 1.6 },
                     growth: { str: 0, con: 1, def: 0.5, dex: 1, agl: 0.5, int: 3, critChance: 0.0007, critDmg: 0 },
                     promotions: { 20: ['Mage', 'Sorcerer'], 40: { 'Mage': ['Archmage', 'Elementalist'], 'Sorcerer': ['Warlock', 'Chronomancer'] }, 70: { 'Archmage': ['Grand Magus'], 'Elementalist': ['Avatar'], 'Warlock': ['Demonologist'], 'Chronomancer': ['Time Lord'] } }
                 },
@@ -1161,31 +1162,31 @@
 
             const monsters = {
                 regular: [
-                    { name: 'Slime', baseHp: 30, baseAtk: 5, baseDef: 2, baseEvasion: 0.01, gold: 5, xp: 5, dropChance: 0.15, monsterType: 'regular' },
-                    { name: 'Giant Rat', baseHp: 25, baseAtk: 6, baseDef: 1, baseEvasion: 0.03, gold: 4, xp: 4, dropChance: 0.10, monsterType: 'regular' },
-                    { name: 'Goblin Scout', baseHp: 40, baseAtk: 7, baseDef: 3, baseEvasion: 0.05, gold: 7, xp: 6, dropChance: 0.20, monsterType: 'regular' },
-                    { name: 'Cave Bat', baseHp: 20, baseAtk: 8, baseDef: 0, baseEvasion: 0.08, gold: 3, xp: 3, dropChance: 0.08, monsterType: 'regular' },
-                    { name: 'Kobold Miner', baseHp: 35, baseAtk: 9, baseDef: 2, baseEvasion: 0.02, gold: 8, xp: 7, dropChance: 0.18, monsterType: 'regular' },
-                    { name: 'Forest Spider', baseHp: 30, baseAtk: 7, baseDef: 1, baseEvasion: 0.10, gold: 6, xp: 5, dropChance: 0.12, monsterType: 'regular' },
-                    { name: 'Undead Soldier', baseHp: 50, baseAtk: 6, baseDef: 5, baseEvasion: 0.01, gold: 9, xp: 8, dropChance: 0.22, monsterType: 'regular' },
+                    { name: 'Slime', baseHp: 30, baseAtk: 5, baseDef: 5, baseEvasion: 0.01, gold: 5, xp: 5, dropChance: 0.15, monsterType: 'regular' },
+                    { name: 'Giant Rat', baseHp: 25, baseAtk: 6, baseDef: 8, baseEvasion: 0.03, gold: 4, xp: 4, dropChance: 0.10, monsterType: 'regular' },
+                    { name: 'Goblin Scout', baseHp: 40, baseAtk: 7, baseDef: 12, baseEvasion: 0.05, gold: 7, xp: 6, dropChance: 0.20, monsterType: 'regular' },
+                    { name: 'Cave Bat', baseHp: 20, baseAtk: 8, baseDef: 15, baseEvasion: 0.08, gold: 3, xp: 3, dropChance: 0.08, monsterType: 'regular' },
+                    { name: 'Kobold Miner', baseHp: 35, baseAtk: 9, baseDef: 20, baseEvasion: 0.02, gold: 8, xp: 7, dropChance: 0.18, monsterType: 'regular' },
+                    { name: 'Forest Spider', baseHp: 30, baseAtk: 7, baseDef: 30, baseEvasion: 0.10, gold: 6, xp: 5, dropChance: 0.12, monsterType: 'regular' },
+                    { name: 'Undead Soldier', baseHp: 50, baseAtk: 6, baseDef: 40, baseEvasion: 0.01, gold: 9, xp: 8, dropChance: 0.22, monsterType: 'regular' },
                 ],
                 mutant: [
-                    { name: 'Mutated Slime', baseHp: 80, baseAtk: 10, baseDef: 1, baseEvasion: 0.01, gold: 20, xp: 15, dropChance: 0.50, monsterType: 'mutant' },
-                    { name: 'Rabid Wolf', baseHp: 50, baseAtk: 18, baseDef: 2, baseEvasion: 0.12, gold: 25, xp: 18, dropChance: 0.40, monsterType: 'mutant' },
-                    { name: 'Shrieking Fungus', baseHp: 100, baseAtk: 8, baseDef: 8, baseEvasion: 0.00, gold: 30, xp: 20, dropChance: 0.60, monsterType: 'mutant' },
+                    { name: 'Mutated Slime', baseHp: 80, baseAtk: 10, baseDef: 45, baseEvasion: 0.01, gold: 20, xp: 15, dropChance: 0.50, monsterType: 'mutant' },
+                    { name: 'Rabid Wolf', baseHp: 50, baseAtk: 18, baseDef: 70, baseEvasion: 0.12, gold: 25, xp: 18, dropChance: 0.40, monsterType: 'mutant' },
+                    { name: 'Shrieking Fungus', baseHp: 100, baseAtk: 8, baseDef: 100, baseEvasion: 0.00, gold: 30, xp: 20, dropChance: 0.60, monsterType: 'mutant' },
                 ],
                 elite: [
-                    { name: 'Orc Grunt', baseHp: 120, baseAtk: 20, baseDef: 8, baseEvasion: 0.05, gold: 50, xp: 30, dropChance: 0.8, monsterType: 'elite' },
-                    { name: 'Troll', baseHp: 150, baseAtk: 18, baseDef: 12, baseEvasion: 0.02, gold: 65, xp: 40, dropChance: 0.9, monsterType: 'elite' },
-                    { name: 'Ogre Mage', baseHp: 100, baseAtk: 28, baseDef: 6, baseEvasion: 0.04, gold: 80, xp: 50, dropChance: 0.85, monsterType: 'elite' },
-                    { name: 'Goblin Shaman', baseHp: 90, baseAtk: 32, baseDef: 5, baseEvasion: 0.08, gold: 90, xp: 55, dropChance: 0.88, monsterType: 'elite' },
-                    { name: 'Stone Golem', baseHp: 200, baseAtk: 15, baseDef: 20, baseEvasion: 0.00, gold: 100, xp: 60, dropChance: 1.0, monsterType: 'elite' },
+                    { name: 'Orc Grunt', baseHp: 120, baseAtk: 20, baseDef: 125, baseEvasion: 0.05, gold: 50, xp: 30, dropChance: 0.8, monsterType: 'elite' },
+                    { name: 'Troll', baseHp: 150, baseAtk: 18, baseDef: 200, baseEvasion: 0.02, gold: 65, xp: 40, dropChance: 0.9, monsterType: 'elite' },
+                    { name: 'Ogre Mage', baseHp: 100, baseAtk: 28, baseDef: 250, baseEvasion: 0.04, gold: 80, xp: 50, dropChance: 0.85, monsterType: 'elite' },
+                    { name: 'Goblin Shaman', baseHp: 90, baseAtk: 32, baseDef: 300, baseEvasion: 0.08, gold: 90, xp: 55, dropChance: 0.88, monsterType: 'elite' },
+                    { name: 'Stone Golem', baseHp: 200, baseAtk: 15, baseDef: 400, baseEvasion: 0.00, gold: 100, xp: 60, dropChance: 1.0, monsterType: 'elite' },
                 ],
                 bosses: [
-                    { name: 'Grimgnaw the Goblin King', baseHp: 400, baseAtk: 35, baseDef: 15, baseEvasion: 0.06, gold: 400, xp: 200, dropChance: 1.0, monsterType: 'boss' },
-                    { name: 'The Slime Mother', baseHp: 600, baseAtk: 30, baseDef: 25, baseEvasion: 0.03, gold: 600, xp: 350, dropChance: 1.0, monsterType: 'boss' },
-                    { name: 'Hydra', baseHp: 500, baseAtk: 45, baseDef: 12, baseEvasion: 0.10, gold: 800, xp: 500, dropChance: 1.0, monsterType: 'boss' },
-                    { name: 'Dragon Whelp', baseHp: 700, baseAtk: 40, baseDef: 20, baseEvasion: 0.08, gold: 1000, xp: 600, dropChance: 1.0, monsterType: 'boss' },
+                    { name: 'Grimgnaw the Goblin King', baseHp: 400, baseAtk: 35, baseDef: 600, baseEvasion: 0.06, gold: 400, xp: 200, dropChance: 1.0, monsterType: 'boss' },
+                    { name: 'The Slime Mother', baseHp: 600, baseAtk: 30, baseDef: 800, baseEvasion: 0.03, gold: 600, xp: 350, dropChance: 1.0, monsterType: 'boss' },
+                    { name: 'Hydra', baseHp: 500, baseAtk: 45, baseDef: 1000, baseEvasion: 0.10, gold: 800, xp: 500, dropChance: 1.0, monsterType: 'boss' },
+                    { name: 'Dragon Whelp', baseHp: 700, baseAtk: 40, baseDef: 1250, baseEvasion: 0.08, gold: 1000, xp: 600, dropChance: 1.0, monsterType: 'boss' },
                 ]
             };
             const itemData = {
@@ -1307,6 +1308,7 @@
                 playerXpText: document.getElementById('player-xp-text'), playerXpFill: document.getElementById('player-xp-fill'),
                 playerAtk: document.getElementById('player-atk'), playerDef: document.getElementById('player-def'),
                 playerCritChance: document.getElementById('player-crit-chance'), playerCritDmg: document.getElementById('player-crit-dmg'),
+                playerTrueDmg: document.getElementById('player-true-dmg'),
                 playerEvasion: document.getElementById('player-evasion'), playerAccuracy: document.getElementById('player-accuracy'),
                 playerGold: document.getElementById('player-gold'), monsterName: document.getElementById('monster-name'),
                 monsterHpText: document.getElementById('monster-hp-text'), monsterHpFill: document.getElementById('monster-hp-fill'),
@@ -1592,11 +1594,67 @@
                 startGame();
             }
 
+            // Replace the existing STAT_CONTRIBUTIONS constant with:
+            const STAT_CONTRIBUTIONS = {
+                // STR contribution to ATK per class
+                atk: {
+                    strContribution: {
+                        'Warrior': 0.9,    // Full benefit from STR
+                        'Rogue': 0.75,     // Slightly less than Warrior
+                        'Wizard': 0.15     // Minor benefit from STR
+                    },
+                    intContribution: {
+                        'Warrior': 0.1,    // Minor benefit from INT
+                        'Rogue': 0.15,     // Slightly more than Warrior
+                        'Wizard': 0.8      // Full benefit from INT
+                    }
+                },
+                // Universal DEF bonus from STR
+                defPerStr: {
+                    'Warrior': 0.6,    // Warriors get best DEF from STR
+                    'Rogue': 0.3,      // Rogues get moderate DEF
+                    'Wizard': 0.2      // Wizards get minimal DEF
+                },
+                // True damage configuration
+                trueDmg: {
+                    base: {
+                        'Wizard': 0.02,    // Reduced from 0.05 to 0.02 (2% base)
+                        'Warrior': 0.01,   // Reduced from 0.02 to 0.01 (1% base)
+                        'Rogue': 0.01      // Reduced from 0.02 to 0.01 (1% base)
+                    },
+                    perInt: {
+                        'Wizard': 0.003,   // 0.3% per INT (was 1.5%)
+                        'Warrior': 0.0008, // 0.08% per INT (was 0.3%)
+                        'Rogue': 0.001     // 0.1% per INT (was 0.4%)
+                    },
+                    softCap: 0.40,         // Soft cap at 40%
+                    hardCap: 0.80          // Hard cap at 80%
+                }
+            };
+
+            // Add this new function after your STAT_CONTRIBUTIONS constant
+            function calculateTrueDamageBonus(className, intValue) {
+                const base = STAT_CONTRIBUTIONS.trueDmg.base[className] || 0;
+                const perInt = STAT_CONTRIBUTIONS.trueDmg.perInt[className] || 0;
+
+                let trueDmgBonus = base + (intValue * perInt);
+
+                // Apply soft cap with diminishing returns
+                if (trueDmgBonus > STAT_CONTRIBUTIONS.trueDmg.softCap) {
+                    const excess = trueDmgBonus - STAT_CONTRIBUTIONS.trueDmg.softCap;
+                    trueDmgBonus = STAT_CONTRIBUTIONS.trueDmg.softCap + (excess * 0.5); // 50% effectiveness after soft cap
+                }
+
+                // Apply hard cap
+                return Math.min(trueDmgBonus, STAT_CONTRIBUTIONS.trueDmg.hardCap);
+            }
+
             function getPlayerTotalStats(hypotheticalItem = null) {
                 if (!gameState.player) return {};
                 const p = gameState.player;
                 const rawStats = { lifesteal: 0, skillLifesteal: 0 };
 
+                // ... (The first part of the function that calculates rawStats remains exactly the same) ...
                 for (const statName in STAT_NAMES) {
                     rawStats[statName] = 0;
                 }
@@ -1636,8 +1694,10 @@
                 }
 
                 let hpPercentBonus = 0;
-                const finalStats = { ...rawStats, hp: 0, atk: 0, def: 0, accuracy: 0, evasion: 0, activeSets: {} };
+                // Initialize finalStats with the new property for the percentage string
+                const finalStats = { ...rawStats, hp: 0, atk: 0, def: 0, accuracy: 0, evasion: 0, activeSets: {}, trueDmgBonus: 0, trueDmgBonusPercent: '0.0%' };
 
+                // ... (The set bonus loop remains the same) ...
                 for (const setName in equippedSets) {
                     const setInfo = itemSets[setName];
                     const count = equippedSets[setName];
@@ -1654,15 +1714,33 @@
                     }
                 }
 
-                const primaryStat = classes[p.baseClassName].primaryStat;
-                finalStats.atk = Math.pow(rawStats[primaryStat] || 1, PRIMARY_STAT_POWER_CURVE) * (1 + gameState.rebirth.bonuses.atk);
-                finalStats.def = (rawStats.def || 0) * (1 + gameState.rebirth.bonuses.def);
+                // --- MAJOR CHANGES START HERE ---
+
+                // --- UPDATED ATTACK CALCULATION ---
+                const strContrib = (rawStats.str || 0) * STAT_CONTRIBUTIONS.atk.strContribution[p.baseClassName];
+                const intContrib = (rawStats.int || 0) * STAT_CONTRIBUTIONS.atk.intContribution[p.baseClassName];
+                const totalAttackPower = strContrib + intContrib;
+
+                finalStats.atk = Math.pow(totalAttackPower || 1, PRIMARY_STAT_POWER_CURVE) * (1 + gameState.rebirth.bonuses.atk);
+
+                const defFromStr = (rawStats.str || 0) * STAT_CONTRIBUTIONS.defPerStr[p.baseClassName];
+                finalStats.def = ((rawStats.def || 0) + defFromStr) * (1 + gameState.rebirth.bonuses.def);
+
+                // --- UPDATED TRUE DAMAGE CALCULATION ---
+                // Calculate true damage bonus with diminishing returns
+                finalStats.trueDmgBonus = calculateTrueDamageBonus(p.baseClassName, rawStats.int || 0);
+
+                // Format for display
+                finalStats.trueDmgBonusPercent = (finalStats.trueDmgBonus * 100).toFixed(1) + '%';
+                // --- END OF NEW LOGIC ---
+
                 finalStats.hp = 50 + ((rawStats.con || 0) * 5) + (1 + gameState.rebirth.bonuses.hp);
                 finalStats.accuracy = (finalStats.dex || 0) * 0.002;
                 finalStats.evasion += (finalStats.agl || 0) * 0.001;
 
                 if (hpPercentBonus > 0) finalStats.hp *= (1 + hpPercentBonus);
 
+                // ... (The temporary buff section remains the same) ...
                 if (p.activeSkills.includes('Frenzy') && !hypotheticalItem) {
                     const missingHpPercent = 1 - (p.currentHp / finalStats.hp);
                     finalStats.atk *= (1 + (Math.floor(missingHpPercent / 0.1) * 0.08));
@@ -1678,6 +1756,8 @@
 
                 return finalStats;
             }
+
+
 
             function gameLoop() {
                 if (!gameState.isRunning || !gameState.player || !gameState.currentMonster) return;
@@ -1761,18 +1841,11 @@
                         logAction(`Your attack was evaded!`, 'log-system', 'battle');
                     } else {
                         logAction(`${attacker.name}'s attack was evaded!`, 'log-system', 'battle');
-                        if (defender.evasionGrantsAtk) {
-                            const bonus = defender.evasionGrantsAtk;
-                            if (gameState.playerTemp.evasionAtkBuffStacks < bonus.maxStacks) {
-                                gameState.playerTemp.evasionAtkBuffStacks++;
-                            }
-                            gameState.playerTemp.evasionAtkBuffDuration = bonus.duration;
-                            logAction(`Storm-Chaser set grants you a surge of power! (Stack: ${gameState.playerTemp.evasionAtkBuffStacks})`, 'log-skill', 'battle');
-                        }
                     }
                     return { damage: 0, isCrit: false, preMitigationDamage: 0 };
                 }
 
+                // Crit calculation remains the same...
                 let isCrit = false;
                 if (isPlayerAttacker) {
                     gameState.playerTemp.attacksSinceLastFocus++;
@@ -1802,14 +1875,10 @@
                     critMultiplier += 0.5;
                 }
 
-                let baseDamage = (attacker.atk || 0);
+                // Calculate base attack with crit
+                let calculatedAtk = (attacker.atk || 0) * critMultiplier;
 
-                let defenderDef = isPlayerAttacker ? (defender.def || 0) : (defender.def || 0);
-                if (isPlayerAttacker && monster && monster.debuffs['Sunder']) defenderDef *= (1 - (monster.debuffs['Sunder'].stacks * 0.1));
-                if (isPlayerAttacker && monster && monster.debuffs['Apocalypse']) defenderDef *= (1 - 0.15);
-                if (isPlayerAttacker && monster && monster.debuffs['LowerDef']) defenderDef *= (1 - monster.debuffs['LowerDef'].percent);
-                if (isPlayerAttacker && isCrit && attacker.critIgnoresDef) defenderDef *= (1 - attacker.critIgnoresDef);
-
+                // Apply any damage multipliers (execute, etc.)
                 let damageMultiplier = 1.0;
                 if (isPlayerAttacker && attacker.executeDmg && (monster.hp / monster.maxHp <= attacker.executeDmg.hpThreshold)) {
                     damageMultiplier += attacker.executeDmg.dmgBonus;
@@ -1820,17 +1889,54 @@
                     if (p.activeSkills.includes('Execute') && monster.hp / monster.maxHp <= executeThreshold) damageMultiplier += executeBonus;
                 }
 
-                const preMitigationDamage = baseDamage * critMultiplier;
-                const damageReduction = 1 - (defenderDef / (defenderDef + 100 + (baseDamage / 10)));
-                let finalDamage = Math.round(preMitigationDamage * damageReduction * damageMultiplier);
+                calculatedAtk *= damageMultiplier;
 
+                // --- NEW IMPLEMENTATION STARTS HERE ---
+
+                // Calculate true damage based on the calculated attack
+                let trueDamage = 0;
+                let normalAtk = calculatedAtk;
+
+                if (isPlayerAttacker && attacker.trueDmgBonus > 0) {
+                    // True damage = calculated atk * true dmg rate
+                    trueDamage = Math.round(calculatedAtk * attacker.trueDmgBonus);
+                    // Normal attack = calculated atk - true dmg
+                    normalAtk = calculatedAtk - trueDamage;
+                }
+
+                // Apply defense reduction only to normal attack
+                let defenderDef = isPlayerAttacker ? (defender.def || 0) : (defender.def || 0);
+                if (isPlayerAttacker && monster && monster.debuffs['Sunder']) defenderDef *= (1 - (monster.debuffs['Sunder'].stacks * 0.1));
+                if (isPlayerAttacker && monster && monster.debuffs['Apocalypse']) defenderDef *= (1 - 0.15);
+                if (isPlayerAttacker && monster && monster.debuffs['LowerDef']) defenderDef *= (1 - monster.debuffs['LowerDef'].percent);
+                if (isPlayerAttacker && isCrit && attacker.critIgnoresDef) defenderDef *= (1 - attacker.critIgnoresDef);
+
+                const damageReduction = 1 - (defenderDef / (defenderDef + 100 + (normalAtk / 10)));
+                let mitigatedNormalDamage = Math.round(normalAtk * damageReduction);
+
+                // Total damage = mitigated normal damage + true damage
+                let finalDamage = mitigatedNormalDamage + trueDamage;
+                if (mitigatedNormalDamage <= 0)
+                    mitigatedNormalDamage = 0;
+
+                if (trueDamage > 0) {
+                    logAction(`Attack splits into ${mitigatedNormalDamage} normal + <span style="color: #8888FF;">${trueDamage}</span> true damage!`, 'log-skill', 'battle');
+                }
+
+                // --- NEW IMPLEMENTATION ENDS HERE ---
+
+                // Add bonus damage from sets
                 if (isPlayerAttacker && attacker.bonusCurrentHpDamage) {
                     const bonusDmg = Math.round(defender.hp * attacker.bonusCurrentHpDamage);
                     finalDamage += bonusDmg;
                     logAction(`Dragon-Slayer set burns for ${bonusDmg} bonus damage!`, 'log-skill', 'battle');
                 }
 
-                return { damage: Math.max(1, finalDamage), isCrit: isCrit, preMitigationDamage: preMitigationDamage };
+                return {
+                    damage: Math.max(1, finalDamage),
+                    isCrit: isCrit,
+                    preMitigationDamage: calculatedAtk  // Store the calculated attack for other uses
+                };
             }
 
             function handlePostPlayerAttackSkills(playerStats, playerDamage, skillDamage) {
@@ -2223,8 +2329,7 @@
                 p.xp -= p.xpToNextLevel;
                 p.level++;
                 p.xpToNextLevel = Math.round(38 * Math.pow(p.level, 1.45));
-                const pointsGained = Math.floor(Math.random() * 3) + 5;
-                p.statPoints += pointsGained;
+                p.statPoints += 5;
 
                 let growth = { ...classes[p.baseClassName].growth };
                 const promoAdjust = promotionGrowthAdjustments[p.className];
@@ -2305,6 +2410,7 @@
                 UIElements.playerEvasion.textContent = `${(totalStats.evasion * 100).toFixed(1)}%`;
                 UIElements.playerCritChance.textContent = `${(totalStats.critChance * 100).toFixed(1)}%`;
                 UIElements.playerCritDmg.textContent = `${(totalStats.critDmg * 100).toFixed(0)}%`;
+                UIElements.playerTrueDmg.textContent = `${(totalStats.trueDmgBonus * 100).toFixed(0)}%`;
                 UIElements.playerGold.textContent = gameState.gold;
 
                 if (gameState.currentMonster) {
@@ -2375,8 +2481,8 @@
                     statDiv.className = 'point-investment-stat';
 
                     const currentVal = (p.baseStats[stat] || 0) +
-                        (stat === 'critChance' ? p.investedStats[stat] * 0.002 :
-                            stat === 'critDmg' ? p.investedStats[stat] * 0.005 :
+                        (stat === 'critChance' ? p.investedStats[stat] * 0.001 :
+                            stat === 'critDmg' ? p.investedStats[stat] * 0.004 :
                                 p.investedStats[stat]);
 
                     const pendingPoints = allocation[stat];
@@ -2687,7 +2793,7 @@
                     // gameState = getDefaultGameState();
                     // gameState.rebirth = oldRebirth;
                     // gameState.rebirth.points += pointsGained;
-                    
+
 
                     // UIElements.classSelectionModal.style.display = 'flex';
                     // UIElements.rebirthBtn.style.display = 'none';
@@ -2714,7 +2820,7 @@
                     gameState.rebirth.points--;
                     // if (['gold', 'xp'].includes(stat)) gameState.rebirth.bonuses[stat] += 0.01;
                     // else 
-                    gameState.rebirth.bonuses[stat] += 0.01;
+                    gameState.rebirth.bonuses[stat] += 0.05;
                     updateAllUIs();
                 }
             }
@@ -2927,31 +3033,33 @@
                 populateDropsInfo();
             }
 
+            // In the populateStatsInfo function, update the STR and INT descriptions:
             function populateStatsInfo() {
                 const content = document.getElementById('info-tab-stats');
                 content.innerHTML = `
-    <h3>Primary Stats</h3>
-    <p>These are the core stats you invest points into. They form the foundation of your character's power.</p>
-    <ul>
-    <li><strong class="stat-name" style="color:var(--stat-str)">STR (Strength):</strong> Primarily increases ATK for Warriors and Rogues.</li>
+<h3>Primary Stats</h3>
+<p>These are the core stats you invest points into. They form the foundation of your character's power.</p>
+<ul>
+    <li><strong class="stat-name" style="color:var(--stat-str)">STR (Strength):</strong> Primary damage stat for Warriors (100%) and Rogues (85%). Wizards gain minor ATK (15%). Also provides DEF: Warriors (0.6), Rogues (0.3), Wizards (0.2) per point.</li>
     <li><strong class="stat-name" style="color:var(--stat-con)">CON (Constitution):</strong> Increases your maximum HP.</li>
     <li><strong class="stat-name" style="color:var(--stat-def)">DEF (Defense):</strong> Increases your DEF, reducing damage taken.</li>
     <li><strong class="stat-name" style="color:var(--stat-dex)">DEX (Dexterity):</strong> Increases your Accuracy, making your attacks less likely to miss.</li>
     <li><strong class="stat-name" style="color:var(--stat-agl)">AGL (Agility):</strong> Increases your Evasion, making you more likely to dodge enemy attacks.</li>
-    <li><strong class="stat-name" style="color:var(--stat-int)">INT (Intelligence):</strong> Primarily increases ATK for Wizards.</li>
-    </ul>
-    <h3>Secondary Stats</h3>
-    <p>These stats are derived from your primary stats and equipment. They directly affect your performance in combat.</p>
-    <ul>
-    <li><strong class="stat-name">ATK (Attack):</strong> Your total damage output before enemy defense is calculated. Scales non-linearly with your primary damage stat (STR or INT).</li>
+    <li><strong class="stat-name" style="color:var(--stat-int)">INT (Intelligence):</strong> Primary damage stat for Wizards (100%). Warriors (10%) and Rogues (15%) gain minor ATK. Grants True Damage: Wizards (+1.5%/pt), Rogues (+0.4%/pt), Warriors (+0.3%/pt). Soft cap at 50%, hard cap at 80%.</li>
+</ul>
+
+<h3>Secondary Stats</h3>
+<p>These stats are derived from your primary stats and equipment. They directly affect your performance in combat.</p>
+<ul>
+    <li><strong class="stat-name">ATK (Attack):</strong> Your total damage output. Scales based on your class's primary stat (STR for Warriors/Rogues, INT for Wizards).</li>
     <li><strong class="stat-name">DEF (Defense):</strong> Your total damage reduction. Higher DEF means you take less damage.</li>
     <li><strong class="stat-name">HP (Health Points):</strong> Your life force. If it reaches zero, you are defeated.</li>
     <li><strong class="stat-name">Accuracy:</strong> Your chance to hit an enemy. Countered by the enemy's Evasion.</li>
     <li><strong class="stat-name">Evasion:</strong> Your chance to dodge an incoming attack. Countered by the enemy's Accuracy.</li>
     <li><strong class="stat-name">Crit Chance:</strong> The probability of your attack being a critical hit, dealing bonus damage.</li>
     <li><strong class="stat-name">Crit DMG:</strong> The damage multiplier applied when you land a critical hit.</li>
-    </ul>
-    `;
+    <li><strong class="stat-name" style="color:#8888FF">True Damage:</strong> Damage that ignores all enemy defense. Each class has a base amount plus scaling from INT. Diminishing returns after 50%, capped at 80%.</li>
+</ul>`;
             }
 
             function populateItemsInfo() {
